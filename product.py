@@ -136,7 +136,7 @@ class ProductGame(tsys.TransitionSystem):
 
     def atoms(self):
         return {str(i) for i in self._automata[0].get_states()}
-        #return set()
+
     def label(self, state):
         return set(str(state.semi_aut_state()))
         #return set()
