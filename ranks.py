@@ -73,7 +73,7 @@ def assign_rank_to_state(ranks_aut: dict, state: ProductState):
     :return: (tuple) ranks for sorted arm names.
     """
     sorted_arms = sorted(ranks_aut.keys())
-    return tuple(ranks_aut[arm][state] for arm in sorted_arms)
+    return tuple(ranks_aut[arm][state.semi_aut_state()] for arm in sorted_arms)
 
 
 if __name__ == '__main__':
@@ -109,8 +109,8 @@ if __name__ == '__main__':
 
     # Assign ranks to product game states
     ranks = dict()
-    for state in product_game.states():
-        ranks[state] = assign_rank_to_state(ranks_aut, state)  # {0: (1, 2, 0)}
+    for state in product_game.states(as_dict=True).keys():
+        ranks[state] = assign_rank_to_state(ranks_aut, product_game.states(as_dict=True)[state])  # {0: (1, 2, 0)}
 
     # Save game model as pickle file
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks.pkl", "wb") as f:
