@@ -30,27 +30,9 @@ def assign_ranks(automata: List[dict], aut: PrefAutomaton):
 
     # Initialize list to store ranks
     ranks = list()
-    infinite_rank = set()
 
-    # Create a set of all states in aut
-    unassigned = aut.states.values()
-
-    #   For each state (which is a tuple of form (q1, q2, ...)),
-    #   identify if at least some qi is accepting in corresponding DFA.
-    for state in unassigned:
-        # Get state representation (see https://akulkarni.me/docs/prefltlf2pdfa/prefltlf2pdfa.html#prefltlf2pdfa.prefltlf.PrefAutomaton.get_states)
-        # Check whether i-th component of state representation is accepting in i-th DFA.
-        # If not, add state to infinite_rank set.
-        cnt=0
-        for i in range(len(aut.dfa)):
-            if state[i] not in aut.dfa[i]['final_states']:
-                cnt+=1
-
-        if cnt == len(aut.dfa):
-            infinite_rank.add(state)
-
-    # Remove states with infinite rank from unassigned set
-    unassigned -= infinite_rank
+    # Create a set of all states in aut preference graph
+    unassigned = aut.pref_graph.nodes()
 
     # Assign ranks to unassigned states
     while unassigned:
@@ -58,12 +40,26 @@ def assign_ranks(automata: List[dict], aut: PrefAutomaton):
         this_rank = set()
 
         for node in unassigned:
-            neighbors = set(aut.pref_graph.edges[node]) - assigned - {node}
+            neighbors = set(aut.pref_graph.successors(node)) - assigned - {node}
             if not neighbors:
                 this_rank.add(node)
 
         ranks.append(this_rank)
         unassigned -= this_rank
+
+    # Assign ranks to semi-automaton states
+    rank_state = []
+    for rank_nodes in ranks:
+        states_with_this_rank = set()
+        for node in rank_nodes:
+            states_with_this_rank.update(set(aut.pref_graph.nodes[node]['partition']))
+        rank_state.append(states_with_this_rank)
+
+    # Create dictionary of state to rank.
+    ranks = dict()
+    for i in range(len(rank_state)):
+        for state in rank_state[i]:
+            ranks[state] = i
 
     return ranks
 
@@ -74,10 +70,10 @@ def assign_rank_to_state(ranks_aut: dict, state: ProductState):
 
     :param ranks_aut: (dict) Format: {arm-name: {aut-state: rank}}
     :param state: (ProductState) A state of product game.
-    :return: (dict) {product game state: rank}
+    :return: (tuple) ranks for sorted arm names.
     """
-    # TODO. Entire function
-    pass
+    sorted_arms = sorted(ranks_aut.keys())
+    return tuple(ranks_aut[arm][state] for arm in sorted_arms)
 
 
 if __name__ == '__main__':
@@ -114,7 +110,7 @@ if __name__ == '__main__':
     # Assign ranks to product game states
     ranks = dict()
     for state in product_game.states():
-        ranks[state] = assign_rank_to_state(ranks_aut, state)
+        ranks[state] = assign_rank_to_state(ranks_aut, state)  # {0: (1, 2, 0)}
 
     # Save game model as pickle file
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks.pkl", "wb") as f:
