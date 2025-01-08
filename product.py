@@ -27,9 +27,10 @@ CONSTRUCTION_CONFIG = {
 # ======================================================================================================================
 
 class ProductState(State):
-    def __init__(self, game_state, semi_aut_state):
+    def __init__(self, game_state, semi_aut_state, turn):
         self._game_state = game_state
         self._sa_state = semi_aut_state
+        self._turn = turn
         super().__init__(obj=(self._game_state, self._sa_state))
 
     def __hash__(self):
@@ -57,6 +58,9 @@ class ProductState(State):
 
     def semi_aut_state(self):
         return self._sa_state
+
+    def turn(self):
+        return self._turn
 
 
 def spot_eval(cond, true_atoms):
@@ -109,7 +113,7 @@ class ProductGame(tsys.TransitionSystem):
 
     def states(self):
         return [
-            ProductState(game_state=s, semi_aut_state=q)
+            ProductState(game_state=s, semi_aut_state=q, turn=self._game.id2state(s).turn())
             for s, q in itertools.product(self._game.states(), self._automata[0].get_states())
         ]
 
@@ -132,14 +136,17 @@ class ProductGame(tsys.TransitionSystem):
         subs_map = {p: True if p in label else False for p in self._game.atoms()}
         for cond, q_next in self._automata[0].transitions[q].items():
             if spot_eval(cond, subs_map):
-                return ProductState(s_next, q_next)
+                return ProductState(s_next, q_next, turn=3 - self._game.id2state(s).turn())
 
     def atoms(self):
         return {str(i) for i in self._automata[0].get_states()}
 
     def label(self, state):
         return set(str(state.semi_aut_state()))
-        #return set()
+        # return set()
+
+    def turn(self, state):
+        return state.game_state().turn()
 
 
 if __name__ == '__main__':

@@ -1,16 +1,17 @@
 import networkx as nx
-from typing import Literal, Iterable, Union
+from typing import Literal, Iterable, Union, Any
 
 ModelTypes = [
     'mdp',  # Markov Decision Process
     'dtptb',  # Deterministic Two-Player Turn-Based
     'csg',  # Concurrent Stochastic Games
+    'cdg',  # Concurrent Deterministic Games
     'smg',  # Stochastic Multiplayer Games
 ]
 
 
 def is_deterministic(model_type):
-    if model_type in ["dtptb"]:
+    if model_type in ["dtptb", "cdg"]:
         return True
     return False
 
@@ -30,7 +31,7 @@ class Game:
 
     :param name: Name of the game.
     :type name: str
-    :param model_type: The type of the game model (e.g., "mdp", "dtptb", "csg", "smg").
+    :param model_type: The type of the game model (e.g., "mdp", "dtptb", "cdg", "csg", "smg").
     :type model_type: ModelTypes (Enum or str)
     :param qualitative: Optional parameter to specify if the game is qualitative or quantitative.
     :type qualitative: bool, optional
@@ -43,7 +44,7 @@ class Game:
 
         :param name: Name of the game.
         :type name: str
-        :param model_type: The type of the game model (e.g., "mdp", "dtptb", "csg", "smg").
+        :param model_type: The type of the game model (e.g., "mdp", "dtptb", "cdg", "csg", "smg").
         :type model_type: ModelTypes (Enum or str)
         :param qualitative: Indicates whether the game is qualitative (default: None).
         :type qualitative: bool, optional
@@ -177,12 +178,12 @@ class Game:
 
         :note: The function uses the model type to determine if the game is deterministic.
             It does not check the actual game graph for determinism.
-            The model type "dtptb" is deterministic, while "mdp" and "csg" are not.
+            The model type "dtptb", "cdg" is deterministic, while "mdp" and "csg" are not.
 
         :return: True if the model is deterministic, False otherwise.
         :rtype: bool
         """
-        if self._model_type in ["dtptb"]:
+        if self._model_type in ["dtptb", "cdg"]:
             return True
         return False
 
@@ -192,7 +193,7 @@ class Game:
 
         :note: The function uses the model type to determine if the game is stochastic.
             It does not check the actual game graph for determinism.
-            The model type "dtptb" is deterministic, while "mdp" and "csg" are not.
+            The model type "dtptb", "cdg" is deterministic, while "mdp" and "csg" are not.
 
         :return: True if the model is stochastic, False otherwise.
         :rtype: bool
@@ -206,13 +207,13 @@ class Game:
         Checks if the game model is concurrent.
 
         :note: The function uses the model type to determine if the game is concurrent.
-            The model types "csg" and "smg" are concurrent, while "mdp" and "dtptb" are turn-based.
+            The model types "csg", "cdg" and "smg" are concurrent, while "mdp" and "dtptb" are turn-based.
 
 
         :return: True if the model is concurrent, False otherwise.
         :rtype: bool
         """
-        if self._model_type in ["csg"]:
+        if self._model_type in ["csg", "cdg"]:
             return True
         return False
 
@@ -221,7 +222,7 @@ class Game:
         Checks if the game model is turn-based.
 
         :note: The function uses the model type to determine if the game is turn-based.
-            The model types "csg" and "smg" are concurrent, while "mdp" and "dtptb" are turn-based.
+            The model types "csg", "cdg" and "smg" are concurrent, while "mdp" and "dtptb" are turn-based.
 
         :return: True if the model is turn-based, False otherwise.
         :rtype: bool
@@ -278,6 +279,8 @@ class Game:
             self._check_mdp()
         elif self._model_type == "dtptb":
             self._check_dtptb()
+        elif self._model_type == "cdg":
+            self._check_cdg()
         elif self._model_type == "csg":
             self._check_csg()
         elif self._model_type == "smg":
@@ -297,6 +300,9 @@ class Game:
     def _check_smg(self):
         raise NotImplementedError("TBD")
 
+    def _check_cdg(self):
+        return True
+
 
 class GraphGame(Game):
     """
@@ -307,7 +313,7 @@ class GraphGame(Game):
 
     :param name: Name of the game.
     :type name: str
-    :param model_type: The type of the game model (e.g., "mdp", "dtptb", "csg", "smg").
+    :param model_type: The type of the game model (e.g., "mdp", "dtptb", "cdg", "csg", "smg").
     :type model_type: ModelTypes (Enum or str)
     :param kwargs: Additional keyword arguments.
     :type kwargs: dict
@@ -319,7 +325,7 @@ class GraphGame(Game):
 
         :param name: Name of the game.
         :type name: str
-        :param model_type: The type of the game model (e.g., "mdp", "dtptb", "csg", "smg").
+        :param model_type: The type of the game model (e.g., "mdp", "dtptb", "cdg", "csg", "smg").
         :type model_type: ModelTypes (Enum or str)
         :param kwargs: Additional arguments for further customization. Currently no keyword arguments are supported.
         :type kwargs: dict
@@ -390,7 +396,7 @@ class GraphGame(Game):
         # Update action set
         self._actions.add(action)
 
-    def add_transition(self, transition):
+    def add_transition(self, transition, as_names=True):
         """ Representation: (u, v, a, p) """
         # # Unpack the transition
         # if self.is_deterministic():
@@ -413,8 +419,11 @@ class GraphGame(Game):
             prob = None
 
         # Get the node ids
-        src_id = self._inv_node_map.get(src)
-        dst_id = self._inv_node_map.get(dst)
+        if as_names is True:
+            src_id = self._inv_node_map.get(src)
+            dst_id = self._inv_node_map.get(dst)
+        else:
+            src_id, dst_id = src, dst
 
         # Add the transition to the graph
         self._graph.add_edge(src_id, dst_id, key=action, prob=prob)
@@ -471,6 +480,12 @@ class GraphGame(Game):
 
         return self._graph.nodes()
 
+    def state2id(self, state):
+        return self._inv_node_map[state]
+
+    def id2state(self, state_id):
+        return self._graph.nodes[state_id]["state"]
+
     def actions(self):
         return self._actions
 
@@ -510,6 +525,9 @@ class GraphGame(Game):
 
     def atoms(self):
         return self._atoms
+
+    def predecessors(self, set_of_states: Iterable[Any]):
+        return set.union(*list(map(set, (self._graph.predecessors(state) for state in set_of_states))))
 
 
 class MatrixGame(Game):
