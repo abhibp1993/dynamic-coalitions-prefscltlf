@@ -88,18 +88,25 @@ if __name__ == '__main__':
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_product.pkl", "rb") as f:
         product_game = pickle.loads(f.read())
 
-    # # Load ranks
-    # with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks.pkl", "rb") as f:
-    #     ranks = pickle.loads(f.read())
+    # Load ranks
+    with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks.pkl", "rb") as f:
+        ranks = pickle.loads(f.read())
 
-    # Construct a concurrent game
-    concurrent_game = construct_conc_game(product_game)
+    # Compute costs for each player
+    costs = assign_costs(product_game, ranks, 3)
 
-    solver = SWinReach(
-        game=concurrent_game,
-        final=[165, 237, 103, 334, 65],
-        num_players=3,
-        player=1,
-    )
-    solver.solve()
-    print(solver.winning_nodes[1])
+    # Save costs
+    with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_costs.pkl", "wb") as f:
+        pickle.dump(costs, f)
+
+    # # Construct a concurrent game
+    # concurrent_game = construct_conc_game(product_game)
+    #
+    # solver = SWinReach(
+    #     game=concurrent_game,
+    #     final=[165, 237, 103, 334, 65],
+    #     num_players=3,
+    #     player=1,
+    # )
+    # solver.solve()
+    # print(solver.winning_nodes[1])
