@@ -15,6 +15,13 @@ EXAMPLE = "example2"  # Folder nPrefAutomatoname of your blocks world implementa
 GAME_CONFIG_FILE = "blockworld_4b_3a.conf"
 
 
+CONSTRUCTION_CONFIG = {
+    "out": Path(__file__).parent / EXAMPLE / "out",
+    "show_progress": True,
+    "debug": False,
+    "check_state_validity": True
+}
+
 # ======================================================================================================================
 
 

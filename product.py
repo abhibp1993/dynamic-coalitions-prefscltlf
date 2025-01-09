@@ -108,6 +108,8 @@ class ProductGame(tsys.TransitionSystem):
         self._game = game
         self._automata = automata
 
+
+
     def state_vars(self):
         return ["TBD"]
 
@@ -147,6 +149,10 @@ class ProductGame(tsys.TransitionSystem):
 
     def turn(self, state):
         return state.game_state().turn()
+
+
+
+
 
 
 if __name__ == '__main__':
