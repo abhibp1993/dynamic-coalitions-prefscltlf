@@ -24,6 +24,12 @@ CONSTRUCTION_CONFIG = {
 
 # ======================================================================================================================
 
+def rank_conc(product_game,conc_game,ranks):
+    ranks_conc =dict()
+    for id,state in conc_game.states(as_dict=True).items():
+        key = next((key for key, value in product_game.states(as_dict=True).items() if value == state), None)
+        ranks_conc[id]=ranks[key]
+    return ranks_conc
 
 def construct_conc_game(game):
     conc_game = GraphGame(name="concurrent_game", model_type="cdg")
@@ -42,18 +48,21 @@ def construct_conc_game(game):
 
 
 def _assign_costs(conc_game, ranks, player, num_players):
-    # Identify maximum rank
-    max_rank = max(ranks.values())  # TODO: Check if this is correct
+    # map ranks to concurrent_game states
 
-    # Iterate to find smallest rank that can be enforced by player from every state
+    # Identify maximum rank
+    max_rank =max(value[player] for value in ranks.values())
+          # TODO: Check if this is correct
+
+    # Iterate to find the smallest rank that can be enforced by player from every state
     cost = {state: float("inf") for state in conc_game.states()}
     for rank in range(max_rank):
         # Compute final states at this rank
-        final_states = None  # TODO: Implement
+        final_states =[id for id, value in ranks.items() if value[player] < rank]  # TODO: Implement
 
         # Compute sure winning states at this rank
         solver = SWinReach(  # TODO: Check
-            game=concurrent_game,
+            game=conc_game,
             final=final_states,
             num_players=num_players,
             player=player,
@@ -73,11 +82,11 @@ def assign_costs(product_game, ranks, num_players):
     """ Assign a vector-valued cost to each state in concurrent game version of input product game. """
     # Construct concurrent game
     conc_game = construct_conc_game(product_game)
-
+    rank_c = rank_conc(product_game, conc_game, ranks)
     # Assign costs
     cost = dict()
     for player in range(num_players):
-        cost[player] = _assign_costs(conc_game, ranks, player, num_players)
+        cost[player] = _assign_costs(conc_game, rank_c, player, num_players)
 
     cost_vector = dict()
     for state in conc_game.states():
@@ -95,9 +104,17 @@ if __name__ == '__main__':
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_product.pkl", "rb") as f:
         product_game = pickle.loads(f.read())
 
+
     # Load ranks
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks.pkl", "rb") as f:
         ranks = pickle.loads(f.read())
+
+    #with open(CONSTRUCTION_CONFIG["out"] / f"{game_config['name']}.pkl", "rb") as f:
+        #game = pickle.loads(f.read())
+    # # Load ranks
+    # with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks.pkl", "rb") as f:
+    #     ranks = pickle.loads(f.read())
+
 
     # Compute costs for each player
     costs = assign_costs(product_game, ranks, 3)
@@ -105,6 +122,7 @@ if __name__ == '__main__':
     # Save costs
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_costs.pkl", "wb") as f:
         pickle.dump(costs, f)
+
 
     # # Construct a concurrent game
     # concurrent_game = construct_conc_game(product_game)
