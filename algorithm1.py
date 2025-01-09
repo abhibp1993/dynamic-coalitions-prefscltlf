@@ -34,6 +34,51 @@ def construct_conc_game(game):
     return conc_game
 
 
+def _assign_costs(conc_game, ranks, player, num_players):
+    # Identify maximum rank
+    max_rank = max(ranks.values())  # TODO: Check if this is correct
+
+    # Iterate to find smallest rank that can be enforced by player from every state
+    cost = {state: float("inf") for state in conc_game.states()}
+    for rank in range(max_rank):
+        # Compute final states at this rank
+        final_states = None  # TODO: Implement
+
+        # Compute sure winning states at this rank
+        solver = SWinReach(  # TODO: Check
+            game=concurrent_game,
+            final=final_states,
+            num_players=num_players,
+            player=player,
+        )
+        solver.solve()
+        winning_states = solver.winning_nodes[player]  # TODO: Check
+
+        if rank == 0:
+            pass  # TODO: Implement
+        else:
+            pass  # TODO: Implement
+
+    return cost
+
+
+def assign_costs(product_game, ranks, num_players):
+    """ Assign a vector-valued cost to each state in concurrent game version of input product game. """
+    # Construct concurrent game
+    conc_game = construct_conc_game(product_game)
+
+    # Assign costs
+    cost = dict()
+    for player in range(num_players):
+        cost[player] = _assign_costs(conc_game, ranks, player, num_players)
+
+    cost_vector = dict()
+    for state in conc_game.states():
+        cost_vector[state] = tuple(cost[player][state] for player in range(num_players))
+
+    return cost_vector
+
+
 if __name__ == '__main__':
     # Load game config
     with open(Path(__file__).parent / EXAMPLE / "out" / GAME_CONFIG_FILE, "rb") as f:
