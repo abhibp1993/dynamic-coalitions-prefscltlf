@@ -48,7 +48,6 @@ def construct_conc_game(game):
 
 
 def _assign_costs(conc_game, ranks, player, num_players):
-    # map ranks to concurrent_game states
 
     # Identify maximum rank
     max_rank =max(value[player] for value in ranks.values())
@@ -58,7 +57,7 @@ def _assign_costs(conc_game, ranks, player, num_players):
     cost = {state: float("inf") for state in conc_game.states()}
     for rank in range(max_rank):
         # Compute final states at this rank
-        final_states =[id for id, value in ranks.items() if value[player] < rank]  # TODO: Implement
+        final_states =[id for id, value in ranks.items() if value[player] <= rank]  # TODO: Implement
 
         # Compute sure winning states at this rank
         solver = SWinReach(  # TODO: Check
@@ -71,9 +70,15 @@ def _assign_costs(conc_game, ranks, player, num_players):
         winning_states = solver.winning_nodes[player]  # TODO: Check
 
         if rank == 0:
-            pass  # TODO: Implement
+            for state in winning_states:
+                cost[state]=rank
+              # TODO: Implement
         else:
-            pass  # TODO: Implement
+            for state in winning_states:
+                if cost[state] >= rank:
+                    cost[state]=rank
+
+              # TODO: Implement
 
     return cost
 
