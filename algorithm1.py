@@ -114,8 +114,8 @@ if __name__ == '__main__':
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks.pkl", "rb") as f:
         ranks = pickle.loads(f.read())
 
-    with open(CONSTRUCTION_CONFIG["out"] / f"{game_config['name']}.pkl", "rb") as f:
-        game = pickle.loads(f.read())
+    #with open(CONSTRUCTION_CONFIG["out"] / f"{game_config['name']}.pkl", "rb") as f:
+        #game = pickle.loads(f.read())
     # # Load ranks
     # with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks.pkl", "rb") as f:
     #     ranks = pickle.loads(f.read())
