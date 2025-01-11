@@ -31,7 +31,8 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
     states={id for id, value in ranks.items() if value[0] <= rank}
 
     # Fix point computation
-    set_u = pre(states, conc_game) - states
+    d=pre(states, conc_game)
+    set_u = pre(states, conc_game).keys()-states
 
     # TODO (Use concurrent game)
     costs = dict()
@@ -68,6 +69,7 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
 
         # Update set_u
         set_u = None  # Pre(Vk) - Vk
+        #states= states | set_u
 
 
 
@@ -90,7 +92,7 @@ def get_coalition_actions(game, u):
             # Update enabled actions dictionary
         en_actions.add((1,act[0]))
         for i in range(players-1):
-            en_actions.add(((1,i+1), (act[0],act[i+1])))
+            en_actions.add(((1,i+2), (act[0],act[i+1])))
     return en_actions
 
 
@@ -99,7 +101,7 @@ def partial_transition(conc_game, u, players, act, values):
 
 
 def pre(set_u,conc_game):
-    frontier = set(conc_game.predecessors(set_u))
+    frontier = dict()
 
     for state in conc_game.predecessors(set_u):
         eliminated_actions = set()
@@ -113,10 +115,31 @@ def pre(set_u,conc_game):
                     _, player_i = players
                     if act_i[0] == action[0] and act_i[1] == action[player_i-1] and next_state not in set_u:
                         eliminated_actions.add((players, act_i))
-        if get_coalition_actions(conc_game, state)  == eliminated_actions:
-            frontier.discard(state)
+        if get_coalition_actions(conc_game, state)  != eliminated_actions:
+            frontier[state]=get_coalition_actions(conc_game, state)-eliminated_actions
 
     return frontier
+
+
+# def pre(set_u,conc_game):
+#     frontier = set(conc_game.predecessors(set_u))
+#
+#     for state in conc_game.predecessors(set_u):
+#         eliminated_actions = set()
+#         for (players,act_i) in get_coalition_actions(conc_game, state):
+#             for _, next_state, action, _ in conc_game.transitions(from_state=state):
+#                 if players ==1:
+#                     if act_i == action[0] and next_state not in set_u:
+#                         eliminated_actions.add((1,act_i))
+#
+#                 else:
+#                     _, player_i = players
+#                     if act_i[0] == action[0] and act_i[1] == action[player_i-1] and next_state not in set_u:
+#                         eliminated_actions.add((players, act_i))
+#         if get_coalition_actions(conc_game, state)  == eliminated_actions:
+#             frontier.discard(state)
+#
+#     return frontier
 
 
 
