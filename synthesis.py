@@ -32,8 +32,7 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
     states={id for id, value in ranks.items() if value[0] <= rank}
 
     # Fix point computation
-    d=pre(states, conc_game)
-    set_u = pre(states, conc_game).keys()-states
+
 
     # TODO (Use concurrent game)
     #this keeps track of backpropagated costs
@@ -43,8 +42,13 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
     for state in states:
         costs[state]=[values[state][1],values[state][2]]
 
-    while set_u:
+
+
+    while True:
+        d = pre(states, conc_game)
+        set_u = pre(states, conc_game).keys() - states
         # Iterate over all states in set_u
+        survived_states=set()
         for u in set_u:
             for players, act in d[u]:
                 #this is the vector appended candidate_costs
@@ -59,13 +63,15 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
                     # If coalition is NOT rational for player i, eliminate coalition action
                     if values[u][player_i-1] < max(costs[v][player_i-2] for v in next_states_under_a):
                         d[u].remove((players, act))
+                        #This 'continue' is for if the joint action is not rationalizable, the rest of the iteration does not have to be done. Am I correct with this?
+                        continue
                           # TODO
 
                     else:
                         c[player_i-2]=  max(costs[v][player_i-2] for v in next_states_under_a)
                         # TODO. Update max player-i cost that can be guaranteed
 
-                # Compute costs for all non-coalitional player
+                # Compute costs for all non-coalitional players
                 non_coalition=set()
                 if players==1:
                     players={players}
@@ -89,27 +95,29 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
                     min_key = min(non_coalitional_cost, key=non_coalitional_cost.get)
                     c[player_j-2]=non_coalitional_cost[min_key]
                     non_coalition.add(min_key)
-
+                # Update costs dictionary: {state: {coalition-action: {non-coalitional-action: cost}}
+                # It automatically obtains the survived states
+                survived_states.add(u)
                 general_costs[u][act][tuple(non_coalition)]=c
 
-
-
-
-                    # TODO. Update cost for player j
-
-                # Update costs dictionary: {state: {coalition-action: {non-coalitional-action: cost}}
-                # TODO
-
         # Eliminate states with no enabled actions (use costs dictionary)
-
+        all_c_vectors_set = set()
         # For surviving states, update max costs for all players.
+        for act, non_coalitions in general_costs[u].items():
+            for non_coalition, c in non_coalitions.items():
+                # Convert the c list to a tuple and add it to the set
+                all_c_vectors_set.add(tuple(c))
 
+        max_costs= tuple(max(t[i] for t in all_c_vectors_set) for i in range(len(c)))
+        costs[u]=max_costs
         # Update Vk
         # Break condition
 
         # Update set_u
-        set_u = None  # Pre(Vk) - Vk
-        #states= states | set_u
+        #set_u = None  # Pre(Vk) - Vk
+        if len(survived_states)==0:
+            break
+        states= states | survived_states
 
 
 
@@ -118,7 +126,7 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
 
 
 
-    return None, None
+    return states, None
 
 
 def get_coalition_actions(game, u):
@@ -207,8 +215,10 @@ def synthesis(product_game, conc_game, ranks, values, n_players):
     # Iterate over all rank until initial state is winning
     for rank in range(max_rank):
         win_states, strategy = _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
+        if conc_game.init_states() in win_states:
+            break
 
-    return set()
+    return win_states
 
 if __name__ == '__main__':
     # Load game config
