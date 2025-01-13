@@ -61,6 +61,7 @@ def _assign_costs(conc_game, ranks, player, num_players):
 
         # Compute sure winning states at this rank
         solver = SWinReach(  # TODO: Check
+
             game=conc_game,
             final=final_states,
             num_players=num_players,
@@ -127,6 +128,20 @@ if __name__ == '__main__':
     # Save costs
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_costs.pkl", "wb") as f:
         pickle.dump(costs, f)
+
+
+    conc_game= construct_conc_game(product_game)
+    # Save conc game
+    with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_conc_game.pkl", "wb") as f:
+        pickle.dump(conc_game, f)
+
+    rank_c=rank_conc(product_game, conc_game, ranks)
+    # Save ranks for conc game
+    with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks_conc_game.pkl", "wb") as f:
+        pickle.dump(rank_c, f)
+
+
+
 
 
     # # Construct a concurrent game
