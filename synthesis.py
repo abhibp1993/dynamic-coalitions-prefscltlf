@@ -37,10 +37,14 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
     # TODO (Use concurrent game)
 
     costs = {state: [float("inf"),float("inf")] for state in conc_game.states()}
+    for state in states:
+        costs[state]=[values[state][1],values[state][2]]
+
     while set_u:
         # Iterate over all states in set_u
         for u in set_u:
             for players, act in d[u]:
+                c=[float("inf"),float("inf")]
                 if players !=1:
                     # Decouple players
                     _, player_i = players
@@ -49,17 +53,38 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
                     next_states_under_a = partial_transition(conc_game, u, players, act)
 
                     # If coalition is NOT rational for player i, eliminate coalition action
-                    if values[u][player_i-1] < max(values[v][player_i-1] for v in next_states_under_a):
+                    if values[u][player_i-1] < max(costs[v][player_i-2] for v in next_states_under_a):
                         d[u].remove((players, act))
                           # TODO
 
                     else:
-                        costs[u][player_i-2]=  max(values[v][player_i-1] for v in next_states_under_a)
-                        print("kaan")# TODO. Update max player-i cost that can be guaranteed
+                        c[player_i-2]=  max(costs[v][player_i-2] for v in next_states_under_a)
+                        # TODO. Update max player-i cost that can be guaranteed
 
                 # Compute costs for all non-coalitional player
-                for player_j in set(range(n_players)) - players:
-                    pass        # TODO. Update cost for player j
+
+                if players==1:
+                    players={players}
+                for player_j in set(player+1 for player in range(n_players)) - {player for player in players}:
+                    actions_j=set()
+                    non_coalitional_cost=dict()
+                    for _, _, a, _ in conc_game.transitions(from_state=u):
+                        actions_j.add(a[player_j-1])
+
+
+                    for a_j in actions_j:
+                        players_with_j=tuple(player for player in players)
+                        players_with_j=players_with_j + (player_j,)
+                        if isinstance(act, tuple) and len(act) == 2:
+                            act_with_j = act + (a_j,)# Unpack the second tuple
+                        else:
+                            act_with_j = (act,) + (a_j,)
+                        next_states_j=partial_transition(conc_game, u, players, act_with_j)
+                        non_coalitional_cost[a_j]=max(costs[state][player_j-2] for state in next_states_j)
+
+
+
+                    # TODO. Update cost for player j
 
                 # Update costs dictionary: {state: {coalition-action: {non-coalitional-action: cost}}
                 # TODO
@@ -101,12 +126,17 @@ def get_coalition_actions(game, u):
 
 def partial_transition(conc_game, u, players, act):
     next_states=set()
-    if players != 1:
+
+    if len(players)==2:
         player_1,player_i=players
         for _, next_state, a, _ in conc_game.transitions(from_state=u):
             if act[0]==a[0] and act[1]==a[player_i-1]:
                 next_states.add(next_state)
-
+    elif len(players)==3:
+        player_1,player_i,player_j=players
+        for _, next_state, a, _ in conc_game.transitions(from_state=u):
+            if act[0]==a[0] and act[1]==a[player_i-1] and act[2]==a[player_j-1]:
+                next_states.add(next_state)
     else:
         for _, next_state, a, _ in conc_game.transitions(from_state=u):
             if act[0]==a[0]:
