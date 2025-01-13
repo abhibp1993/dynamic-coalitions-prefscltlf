@@ -35,24 +35,27 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
     set_u = pre(states, conc_game).keys()-states
 
     # TODO (Use concurrent game)
-    costs = dict()
+
+    costs = {state: [float("inf"),float("inf")] for state in conc_game.states()}
     while set_u:
         # Iterate over all states in set_u
         for u in set_u:
-            for players, act in get_coalition_actions(conc_game, u):
-                if len(players) > 1:
+            for players, act in d[u]:
+                if players !=1:
                     # Decouple players
                     _, player_i = players
 
                     # Get next states given coalition action
-                    next_states_under_a = partial_transition(conc_game, u, players, act, values)
+                    next_states_under_a = partial_transition(conc_game, u, players, act)
 
                     # If coalition is NOT rational for player i, eliminate coalition action
-                    if values[u][player_i] < max(values[v][player_i] for v in next_states_under_a):
-                        pass        # TODO
+                    if values[u][player_i-1] < max(values[v][player_i-1] for v in next_states_under_a):
+                        d[u].remove((players, act))
+                          # TODO
 
                     else:
-                        pass        # TODO. Update max player-i cost that can be guaranteed
+                        costs[u][player_i-2]=  max(values[v][player_i-1] for v in next_states_under_a)
+                        print("kaan")# TODO. Update max player-i cost that can be guaranteed
 
                 # Compute costs for all non-coalitional player
                 for player_j in set(range(n_players)) - players:
@@ -96,8 +99,19 @@ def get_coalition_actions(game, u):
     return en_actions
 
 
-def partial_transition(conc_game, u, players, act, values):
-    return set()
+def partial_transition(conc_game, u, players, act):
+    next_states=set()
+    if players != 1:
+        player_1,player_i=players
+        for _, next_state, a, _ in conc_game.transitions(from_state=u):
+            if act[0]==a[0] and act[1]==a[player_i-1]:
+                next_states.add(next_state)
+
+    else:
+        for _, next_state, a, _ in conc_game.transitions(from_state=u):
+            if act[0]==a[0]:
+                next_states.add(next_state)
+    return next_states
 
 
 def pre(set_u,conc_game):
