@@ -7,6 +7,7 @@ from product import ProductState
 from pprint import pprint
 from ggsolver.solvers.cdg import *
 from ggsolver.game import GraphGame
+from collections import defaultdict
 
 
 # MODIFY ONLY THIS BLOCK
@@ -35,8 +36,10 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
     set_u = pre(states, conc_game).keys()-states
 
     # TODO (Use concurrent game)
-
+    #this keeps track of backpropagated costs
     costs = {state: [float("inf"),float("inf")] for state in conc_game.states()}
+    #this is general dictionary of state, coalition, non_coalition and the respective actions
+    general_costs = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     for state in states:
         costs[state]=[values[state][1],values[state][2]]
 
@@ -44,6 +47,7 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
         # Iterate over all states in set_u
         for u in set_u:
             for players, act in d[u]:
+                #this is the vector appended candidate_costs
                 c=[float("inf"),float("inf")]
                 if players !=1:
                     # Decouple players
@@ -62,7 +66,7 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
                         # TODO. Update max player-i cost that can be guaranteed
 
                 # Compute costs for all non-coalitional player
-
+                non_coalition=set()
                 if players==1:
                     players={players}
                 for player_j in set(player+1 for player in range(n_players)) - {player for player in players}:
@@ -82,6 +86,13 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
                         next_states_j=partial_transition(conc_game, u, players, act_with_j)
                         non_coalitional_cost[a_j]=max(costs[state][player_j-2] for state in next_states_j)
 
+                    min_key = min(non_coalitional_cost, key=non_coalitional_cost.get)
+                    c[player_j-2]=non_coalitional_cost[min_key]
+                    non_coalition.add(min_key)
+
+                general_costs[u][act][tuple(non_coalition)]=c
+
+
 
 
                     # TODO. Update cost for player j
@@ -90,6 +101,7 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players,ranks)
                 # TODO
 
         # Eliminate states with no enabled actions (use costs dictionary)
+
         # For surviving states, update max costs for all players.
 
         # Update Vk
