@@ -14,7 +14,6 @@ from ggsolver.game import GraphGame
 EXAMPLE = "example2"  # Folder nPrefAutomatoname of your blocks world implementation
 GAME_CONFIG_FILE = "blockworld_4b_3a.conf"
 
-
 CONSTRUCTION_CONFIG = {
     "out": Path(__file__).parent / EXAMPLE / "out",
     "show_progress": True,
@@ -22,14 +21,16 @@ CONSTRUCTION_CONFIG = {
     "check_state_validity": True
 }
 
+
 # ======================================================================================================================
 
-def rank_conc(product_game,conc_game,ranks):
-    ranks_conc =dict()
-    for id,state in conc_game.states(as_dict=True).items():
+def rank_conc(product_game, conc_game, ranks):
+    ranks_conc = dict()
+    for sid, state in conc_game.states(as_dict=True).items():
         key = next((key for key, value in product_game.states(as_dict=True).items() if value == state), None)
-        ranks_conc[id]=ranks[key]
+        ranks_conc[sid] = ranks[key]
     return ranks_conc
+
 
 def construct_conc_game(game):
     conc_game = GraphGame(name="concurrent_game", model_type="cdg")
@@ -48,16 +49,15 @@ def construct_conc_game(game):
 
 
 def _assign_costs(conc_game, ranks, player, num_players):
-
     # Identify maximum rank
-    max_rank =max(value[player] for value in ranks.values())
-          # TODO: Check if this is correct
+    max_rank = max(value[player] for value in ranks.values())
+    # TODO: Check if this is correct
 
     # Iterate to find the smallest rank that can be enforced by player from every state
     cost = {state: float("inf") for state in conc_game.states()}
     for rank in range(max_rank):
         # Compute final states at this rank
-        final_states =[id for id, value in ranks.items() if value[player] <= rank]  # TODO: Implement
+        final_states = [sid for sid, value in ranks.items() if value[player] <= rank]  # TODO: Implement
 
         # Compute sure winning states at this rank
         solver = SWinReach(  # TODO: Check
@@ -72,14 +72,14 @@ def _assign_costs(conc_game, ranks, player, num_players):
 
         if rank == 0:
             for state in winning_states:
-                cost[state]=rank
-              # TODO: Implement
+                cost[state] = rank
+            # TODO: Implement
         else:
             for state in winning_states:
                 if cost[state] >= rank:
-                    cost[state]=rank
+                    cost[state] = rank
 
-              # TODO: Implement
+            # TODO: Implement
 
     return cost
 
@@ -110,17 +110,15 @@ if __name__ == '__main__':
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_product.pkl", "rb") as f:
         product_game = pickle.loads(f.read())
 
-
     # Load ranks
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks.pkl", "rb") as f:
         ranks = pickle.loads(f.read())
 
-    #with open(CONSTRUCTION_CONFIG["out"] / f"{game_config['name']}.pkl", "rb") as f:
-        #game = pickle.loads(f.read())
+    # with open(CONSTRUCTION_CONFIG["out"] / f"{game_config['name']}.pkl", "rb") as f:
+    # game = pickle.loads(f.read())
     # # Load ranks
     # with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks.pkl", "rb") as f:
     #     ranks = pickle.loads(f.read())
-
 
     # Compute costs for each player
     costs = assign_costs(product_game, ranks, 3)
@@ -129,20 +127,15 @@ if __name__ == '__main__':
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_costs.pkl", "wb") as f:
         pickle.dump(costs, f)
 
-
-    conc_game= construct_conc_game(product_game)
+    conc_game = construct_conc_game(product_game)
     # Save conc game
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_conc_game.pkl", "wb") as f:
         pickle.dump(conc_game, f)
 
-    rank_c=rank_conc(product_game, conc_game, ranks)
+    rank_c = rank_conc(product_game, conc_game, ranks)
     # Save ranks for conc game
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks_conc_game.pkl", "wb") as f:
         pickle.dump(rank_c, f)
-
-
-
-
 
     # # Construct a concurrent game
     # concurrent_game = construct_conc_game(product_game)
