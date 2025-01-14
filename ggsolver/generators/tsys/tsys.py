@@ -16,7 +16,8 @@ class TransitionSystem:
     def __init__(self, name: str, model_type: game.ModelTypes, *, is_qualitative=False, **kwargs):
         self._name = name
         self._model_type = model_type
-        self._is_qualitative = is_qualitative.semi_aut_state()
+        self._is_qualitative = is_qualitative
+
 
     def state_vars(self):
         # TODO. Provide default

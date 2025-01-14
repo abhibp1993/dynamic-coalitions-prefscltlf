@@ -70,7 +70,8 @@ class BlocksWorld(tsys.TransitionSystem):
                  arms: Iterable[str],
                  partitions: Dict[str, List[str]],
                  priority: List[str],
-                 check_state_validity: bool = True,
+                 #check_state_validity: bool = True,
+                 location: int,
                  ):
         # Call base constructor
         super().__init__(
@@ -84,7 +85,8 @@ class BlocksWorld(tsys.TransitionSystem):
         self.arms = list(sorted(arms))
         self.partitions = partitions
         self.priority = priority
-        self._check_state_validity = check_state_validity
+        # self._check_state_validity = check_state_validity
+        self.location = location
 
         # If user has added "table" as a block, discard it
         if "table" in self.blocks:
@@ -102,17 +104,31 @@ class BlocksWorld(tsys.TransitionSystem):
                                    ]
 
         # Ground actions
-        self.grounded_actions = [
-                                    ("pick", arm, block)
-                                    for arm in self.arms
-                                    for block in self.blocks
-                                    if block in self.partitions[arm]
-                                ] + [
-                                    ("put", arm, block, on_block)
-                                    for arm in self.arms
-                                    for block, on_block in itertools.product(self.blocks, blocks_with_table)
-                                    if block in self.partitions[arm] and block != on_block
-                                ]
+
+        self.grounded_actions = ([
+                                     ("pick", arm, block)
+                                     for arm in self.arms
+                                     for block in self.blocks
+                                     if block in self.partitions[arm]
+                                 ] +
+                                 [
+                                     ("put", arm, block, l)
+                                     for arm in self.arms
+                                     for l in range(self.location)
+                                     for block in self.partitions[arm]
+                                 ])
+
+                                #  self.grounded_actions = [
+                                #     ("pick", arm, block)
+                                #     for arm in self.arms
+                                #     for block in self.blocks
+                                #     if block in self.partitions[arm]
+                                # ] + [
+                                #     ("put", arm, block, on_block)
+                                #     for arm in self.arms
+                                #     for block, on_block in itertools.product(self.blocks, blocks_with_table)
+                                #     if block in self.partitions[arm] and block != on_block
+                                # ]
 
         # Uncomment for printing
         # pprint(self.grounded_predicates)
@@ -123,29 +139,29 @@ class BlocksWorld(tsys.TransitionSystem):
         return ["_".join(pred) for pred in self.grounded_predicates]
 
     def states(self):
-        # return {
-        #     GameState(
-        #         predicates={
-        #             ('on', 'b1', 'table', 0),
-        #             ('on', 'b2', 'b1', 0),
-        #             ('on', 'b3', 'b2', 0),
-        #             ('on', 'b4', 'b3', 0),
-        #
-        #         },
-        #         turn=1
-        #     )
-        # }
 
         return {
             GameState(
                 predicates={
-                               ('on', self.blocks[0], 'table')
-                           } | {
-                               ('on', self.blocks[i + 1], self.blocks[i]) for i in range(len(self.blocks) - 1)
-                           },
+                    ('on', 'b1', 'table', 0),
+                    ('on', 'b2', 'b1', 0),
+                    ('on', 'b3', 'b2', 0),
+                    ('on', 'b4', 'b3', 0),
+                },
                 turn=1
             )
         }
+
+        # return {
+        #     GameState(
+        #         predicates={
+        #                        ('on', self.blocks[0], 'table')
+        #                    } | {
+        #                        ('on', self.blocks[i + 1], self.blocks[i]) for i in range(len(self.blocks) - 1)
+        #                    },
+        #         turn=1
+        #     )
+        # }
 
     # def actions(self, state):
     #     # Identify blocks on top of stack and free arms
@@ -216,24 +232,32 @@ class BlocksWorld(tsys.TransitionSystem):
 
     def actions(self, state):
         # Identify blocks on top of stack and free arms
-        top_blocks = self._top_blocks(state.predicates())
+        # top_blocks = self._top_blocks(state)
         free_arms, block_held_by = self._free_arms(state)
         # print(top_blocks)
         # print(free_arms, block_held_by)
 
         # Every free arm can pick a block not held by some arm
-        actions_arm = {arm: {("no-op",)} for arm in self.arms}
+        actions_arm = {arm: {("no_action", arm)} for arm in self.arms}
         for arm in free_arms:
             for block in set(self.partitions[arm]) - free_arms:
                 actions_arm[arm].add(("pick", arm, block))
 
         # Every holding arm can put the block it holds on a top block
         for arm in [a for a in self.arms if a not in free_arms]:
-            for block in top_blocks:
-                actions_arm[arm].add(("put", arm, block_held_by[arm], block))
+            for l in range(self.location):
+                actions_arm[arm].add(("put", arm, block_held_by[arm], l))
+
+        # for arm in [a for a in self.arms if a not in free_arms]:
+        #     for block in top_blocks:
+        #         actions_arm[arm].add(("put", arm, block_held_by[arm], block))
 
         result = set()
         if state.turn() == 1:
+            for act in actions_arm[self.arms[0]]:
+                coalition = 1
+                result.add((coalition, act))
+
             for player in range(2, len(self.arms) + 1):
                 coalition = (1, player)
                 for act in itertools.product(actions_arm[self.arms[0]], actions_arm[self.arms[player - 1]]):
@@ -242,26 +266,41 @@ class BlocksWorld(tsys.TransitionSystem):
             return result
 
         else:  # state.turn() == 2:
-            (_, p) = state.coalition()
-            (a1, ap) = state.action()
+            if state.coalition() == 1:
+                a1 = state.action()
+                actions = []
+                for i in range(1, len(self.arms) + 1):
+                    if i == 1:
+                        actions.append([a1])
+                        continue
 
-            actions = []
-            for i in range(1, len(self.arms) + 1):
-                if i == 1:
-                    actions.append([a1])
-                    continue
+                    actions.append(actions_arm[self.arms[i - 1]])
 
-                if i == p:
-                    actions.append([ap])
-                    continue
+                return set(itertools.product(*actions))
 
-                actions.append(actions_arm[self.arms[i - 1]])
+            if state.coalition() != 1:
+                (_, p) = state.coalition()
+                (a1, ap) = state.action()
 
-            return set(itertools.product(*actions)) - {tuple(("no-op",) for _ in range(len(self.arms)))}
+                actions = []
+                for i in range(1, len(self.arms) + 1):
+                    if i == 1:
+                        actions.append([a1])
+                        continue
+
+                    if i == p:
+                        actions.append([ap])
+                        continue
+
+                    actions.append(actions_arm[self.arms[i - 1]])
+
+                return set(itertools.product(*actions))
+
+            # return set(itertools.product(*actions)) - {tuple(("no-op",) for _ in range(len(self.arms)))}
 
     def delta(self, state, action):
         if state.turn() == 1:
-            nstate = GameState(
+            return GameState(
                 predicates=state.predicates(),
                 turn=2,
                 coalition=action[0],
@@ -282,6 +321,7 @@ class BlocksWorld(tsys.TransitionSystem):
 
                 if act == ("no_action", arm):
                     continue
+
 
                 elif act[0] == "pick":
                     block = act[2]
@@ -322,25 +362,19 @@ class BlocksWorld(tsys.TransitionSystem):
                 new_predicates |= pred_to_add
                 # print("kaan")
 
-            nstate = GameState(
+            return GameState(
                 predicates=new_predicates,
                 turn=1
             )
-
-        if self._check_state_validity:
-            if not self._is_state_valid(nstate):
-                raise ValueError(f"Invalid state: {nstate}")
-
-        return nstate
 
     def atoms(self):
         return {"a", "b", "c"}
 
     def label(self, state):
-        if ('on', 'b1', 'b2') in state.predicates():
+        if ('on','b1','b2') in state.predicates():
             return {"a"}
         else:
-            return {"b", "c"}
+            return {"b","c"}
         # else:
         #     return set()
 
@@ -366,14 +400,28 @@ class BlocksWorld(tsys.TransitionSystem):
     def _neighbors_block(self, predicates, block):
         block_above = None
         block_below = None
+        location = None
         for pred in predicates:
             if pred[0] == "on" and pred[2] == block:
                 block_above = pred[1]
 
             if pred[0] == "on" and pred[1] == block:
                 block_below = pred[2]
+                location = pred[3]
 
-        return block_above, block_below
+        return block_above, block_below, location
+
+    # def _neighbors_block(self, predicates, block):
+    #     block_above = None
+    #     block_below = None
+    #     for pred in predicates:
+    #         if pred[0] == "on" and pred[2] == block:
+    #             block_above = pred[1]
+    #
+    #         if pred[0] == "on" and pred[1] == block:
+    #             block_below = pred[2]
+    #
+    #     return block_above, block_below
 
     def _is_state_valid(self, state):
         if not self._chk_one_block_on_two(state):
@@ -500,7 +548,7 @@ if __name__ == '__main__':
         "a3": {"b3", "b4"},
     }
 
-    game = BlocksWorld(name="BW_5b_3a", blocks=blocks, arms=arms, partitions=partitions, priority=arms)
+    game = BlocksWorld(name="BW_5b_3a", blocks=blocks, arms=arms, partitions=partitions, priority=arms, location=2)
     out = game.build(build_labels=True, show_progress=True, debug=False)
     with open("game_model.pickle", "wb") as f:
         f.write(pickle.dumps(out))
