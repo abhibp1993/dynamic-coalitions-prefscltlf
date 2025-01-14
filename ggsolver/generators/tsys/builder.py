@@ -238,7 +238,8 @@ class Builder:
         for action in actions:
             n_state = self.tsys.delta(state, action)
             assert isinstance(n_state, State), \
-                f"Invalid state type: Expected instance of `tsys.State` got {type(n_state)}."
+                (f"Invalid state type: Expected instance of `tsys.State` got {type(n_state)}.\n"
+                 f"Input: {state=}, {action=}")
             transitions.add((state, n_state, action, None))  # (action, next_state, prob)
 
         return transitions

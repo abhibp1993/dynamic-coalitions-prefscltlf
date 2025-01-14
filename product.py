@@ -1,20 +1,19 @@
 import itertools
 import pickle
+from pathlib import Path
+from typing import List
+
 import spot
+from prefscltl2pdfa import PrefAutomaton, PrefScLTL
 
 from ggsolver.generators import tsys
 from ggsolver.generators.tsys.cls_state import *
-from typing import Iterable, List
-from prefscltl2pdfa import PrefAutomaton, PrefScLTL
-from pprint import pprint
-from pathlib import Path
 
 # ======================================================================================================================
 # MODIFY ONLY THIS BLOCK
 # ======================================================================================================================
 EXAMPLE = "example2"  # Folder name of your blocks world implementation
 GAME_CONFIG_FILE = "blockworld_4b_3a.conf"
-from example2.game_model import BlocksWorld
 
 CONSTRUCTION_CONFIG = {
     "out": Path(__file__).parent / EXAMPLE / "out",
@@ -153,10 +152,6 @@ class ProductGame(tsys.TransitionSystem):
 
     def turn(self, state):
         return state.game_state().turn()
-
-
-
-
 
 
 if __name__ == '__main__':
