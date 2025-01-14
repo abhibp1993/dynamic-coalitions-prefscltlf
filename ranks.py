@@ -12,7 +12,7 @@ from prefscltl2pdfa import utils
 # ======================================================================================================================
 # MODIFY ONLY THIS BLOCK
 # ======================================================================================================================
-EXAMPLE = "example2"  # Folder nPrefAutomatoname of your blocks world implementation
+EXAMPLE = "example4"  # Folder nPrefAutomatoname of your blocks world implementation
 GAME_CONFIG_FILE = "blockworld_4b_3a.conf"
 
 

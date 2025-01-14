@@ -12,7 +12,7 @@ from pathlib import Path
 # ======================================================================================================================
 # MODIFY ONLY THIS BLOCK
 # ======================================================================================================================
-EXAMPLE = "example2"  # Folder name of your blocks world implementation
+EXAMPLE = "example4"  # Folder name of your blocks world implementation
 GAME_CONFIG_FILE = "blockworld_4b_3a.conf"
 from example2.game_model import BlocksWorld
 
@@ -114,10 +114,16 @@ class ProductGame(tsys.TransitionSystem):
         return ["TBD"]
 
     def states(self):
-        return [
-            ProductState(game_state=s, semi_aut_state=q, turn=self._game.id2state(s).turn())
-            for s, q in itertools.product(self._game.states(), self._automata[0].get_states())
-        ]
+        if self.model_type() == "cdg":
+            return [
+                ProductState(game_state=s, semi_aut_state=q, turn=None)
+                for s, q in itertools.product(self._game.states(), self._automata[0].get_states())
+            ]
+        else:
+            return [
+                ProductState(game_state=s, semi_aut_state=q, turn=self._game.id2state(s).turn())
+                for s, q in itertools.product(self._game.states(), self._automata[0].get_states())
+            ]
 
     def actions(self, state):
         s = state.game_state()
@@ -138,7 +144,10 @@ class ProductGame(tsys.TransitionSystem):
         subs_map = {p: True if p in label else False for p in self._game.atoms()}
         for cond, q_next in self._automata[0].transitions[q].items():
             if spot_eval(cond, subs_map):
-                return ProductState(s_next, q_next, turn=3 - self._game.id2state(s).turn())
+                if self.model_type() == "cdg":
+                    return ProductState(s_next, q_next, turn=None)
+                else:
+                    return ProductState(s_next, q_next, turn=3 - self._game.id2state(s).turn())
 
     def atoms(self):
         return {str(i) for i in self._automata[0].get_states()}

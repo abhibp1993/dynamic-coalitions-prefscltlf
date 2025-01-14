@@ -149,12 +149,11 @@ class BlocksWorld(tsys.TransitionSystem):
                     ('on', 'b2', 'b1', 0),
                     ('on', 'b3', 'b2', 0),
                     ('on', 'b4', 'b3', 0),
-                    ('on', 'b5', 'b4', 0),
                     ('hold','a1','none'),
                     ('hold', 'a2', 'none'),
                     ('hold', 'a3', 'none'),
                 },
-                turn=2
+                turn=None
             )
         }
 
@@ -265,7 +264,7 @@ class BlocksWorld(tsys.TransitionSystem):
 
         return GameState(
                 predicates=next_state,
-                turn=2
+                turn=None
             )
 
 # def actions(self, state):
@@ -594,12 +593,12 @@ class BlocksWorld(tsys.TransitionSystem):
 
 
 if __name__ == '__main__':
-    blocks = ['b1', 'b2', 'b3', 'b4','b5']
+    blocks = ['b1', 'b2', 'b3', 'b4']
     arms = ['a1', 'a2', 'a3']
     partitions = {
         "a1": {"b1"},
-        "a2": {"b2", "b3"},
-        "a3": {"b4", "b5"},
+        "a2": {"b2"},
+        "a3": {"b3", "b4"},
     }
 
     game = BlocksWorld(name="BW_5b_3a", blocks=blocks, arms=arms, partitions=partitions, priority=arms, location=3)

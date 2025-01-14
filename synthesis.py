@@ -11,7 +11,7 @@ from collections import defaultdict
 
 # MODIFY ONLY THIS BLOCK
 # ======================================================================================================================
-EXAMPLE = "example2"  # Folder nPrefAutomatoname of your blocks world implementation
+EXAMPLE = "example4"  # Folder nPrefAutomatoname of your blocks world implementation
 GAME_CONFIG_FILE = "blockworld_4b_3a.conf"
 
 CONSTRUCTION_CONFIG = {
@@ -80,7 +80,7 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks
                     for a_j in actions_j:
                         players_with_j = tuple(player for player in players)
                         players_with_j = players_with_j + (player_j,)
-                        if isinstance(act, tuple) and len(act) == 2:
+                        if isinstance(act, tuple) and len(act) == 2 and act[0] !='no_action':
                             act_with_j = act + (a_j,)  # Unpack the second tuple
                         else:
                             act_with_j = (act,) + (a_j,)

@@ -11,7 +11,7 @@ from ggsolver.game import GraphGame
 # ======================================================================================================================
 # MODIFY ONLY THIS BLOCK
 # ======================================================================================================================
-EXAMPLE = "example2"  # Folder nPrefAutomatoname of your blocks world implementation
+EXAMPLE = "example4"  # Folder nPrefAutomatoname of your blocks world implementation
 GAME_CONFIG_FILE = "blockworld_4b_3a.conf"
 
 CONSTRUCTION_CONFIG = {
@@ -31,21 +31,22 @@ def rank_conc(product_game, conc_game, ranks):
         ranks_conc[sid] = ranks[key]
     return ranks_conc
 
+#Open this up when the game is turn-based
 
-def construct_conc_game(game):
-    conc_game = GraphGame(name="concurrent_game", model_type="cdg")
-
-    # Add states
-    conc_game.add_states({state for sid, state in game.states(as_dict=True).items() if state.turn() == 1})
-
-    # Add Transitions
-    for sid, state in conc_game.states(as_dict=True).items():
-        for _, intermediate_st, _, _ in game.transitions(from_state=game.state2id(state)):
-            for _, next_st, a, _ in game.transitions(from_state=intermediate_st):
-                next_state_id = conc_game.state2id(game.id2state(next_st))
-                conc_game.add_transition((sid, next_state_id, a, None), as_names=False)
-
-    return conc_game
+# def construct_conc_game(game):
+#     conc_game = GraphGame(name="concurrent_game", model_type="cdg")
+#
+#     # Add states
+#     conc_game.add_states({state for sid, state in game.states(as_dict=True).items() if state.turn() == 1})
+#
+#     # Add Transitions
+#     for sid, state in conc_game.states(as_dict=True).items():
+#         for _, intermediate_st, _, _ in game.transitions(from_state=game.state2id(state)):
+#             for _, next_st, a, _ in game.transitions(from_state=intermediate_st):
+#                 next_state_id = conc_game.state2id(game.id2state(next_st))
+#                 conc_game.add_transition((sid, next_state_id, a, None), as_names=False)
+#
+#     return conc_game
 
 
 def _assign_costs(conc_game, ranks, player, num_players):
@@ -87,7 +88,8 @@ def _assign_costs(conc_game, ranks, player, num_players):
 def assign_costs(product_game, ranks, num_players):
     """ Assign a vector-valued cost to each state in concurrent game version of input product game. """
     # Construct concurrent game
-    conc_game = construct_conc_game(product_game)
+    # conc_game = construct_conc_game(product_game)
+    conc_game=product_game
     rank_c = rank_conc(product_game, conc_game, ranks)
     # Assign costs
     cost = dict()
@@ -127,7 +129,8 @@ if __name__ == '__main__':
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_costs.pkl", "wb") as f:
         pickle.dump(costs, f)
 
-    conc_game = construct_conc_game(product_game)
+    # conc_game = construct_conc_game(product_game)
+    conc_game=product_game
     # Save conc game
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_conc_game.pkl", "wb") as f:
         pickle.dump(conc_game, f)

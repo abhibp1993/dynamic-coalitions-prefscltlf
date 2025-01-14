@@ -9,11 +9,11 @@ from pathlib import Path
 # ======================================================================================================================
 # MODIFY ONLY THIS BLOCK
 # ======================================================================================================================
-EXAMPLE = "example2"  # Folder name of your blocks world implementation
-from example2.game_model import BlocksWorld
+EXAMPLE = "example4"  # Folder name of your blocks world implementation
+from example4.game_model import BlocksWorld
 
 GAME_CONFIG = {
-    # "name": f"blockworld_4b_3a",      # Name is generated automatically. If you want custom name, uncomment this line.
+    "name": f"blockworld_4b_3a_3l",      # Name is generated automatically. If you want custom name, uncomment this line.
     "blocks": ['b1', 'b2', 'b3', 'b4'],
     "arms": ['a1', 'a2', 'a3'],
     "partitions": {
@@ -26,7 +26,8 @@ GAME_CONFIG = {
         "a1": "spec1",
         "a2": "spec2",
         "a3": "spec3",
-    }
+    },
+    "location": 3
 }
 
 CONSTRUCTION_CONFIG = {
@@ -108,7 +109,8 @@ if __name__ == '__main__':
         arms=GAME_CONFIG["arms"],
         partitions=GAME_CONFIG["partitions"],
         priority=GAME_CONFIG["priority"],
-        check_state_validity=CONSTRUCTION_CONFIG["check_state_validity"]
+        location=GAME_CONFIG["location"]
+        # check_state_validity=CONSTRUCTION_CONFIG["check_state_validity"]
     )
     out = game.build(
         build_labels=True,
