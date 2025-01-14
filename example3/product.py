@@ -1,35 +1,24 @@
 import itertools
 import pickle
-from pathlib import Path
-from typing import List
+# import sys
+# sys.path.insert(0, '/opt/homebrew/Cellar/spot/2.12.1/blib/python3.13/')
 
 import spot
-from prefscltl2pdfa import PrefAutomaton, PrefScLTL
 
+from game_model_3 import *
 from ggsolver.generators import tsys
 from ggsolver.generators.tsys.cls_state import *
+from typing import Iterable, List
+import sys
+sys.path.append('/Users/andkaanyilmaz/Desktop/PrefScLTL/prefscltl2pdfa')  # Adjust the path
+from prefscltl2pdfa.prefscltl import PrefAutomaton, PrefScLTL
+from pprint import pprint
 
-# ======================================================================================================================
-# MODIFY ONLY THIS BLOCK
-# ======================================================================================================================
-EXAMPLE = "example4"  # Folder name of your blocks world implementation
-GAME_CONFIG_FILE = "blockworld_4b_3a.conf"
-
-CONSTRUCTION_CONFIG = {
-    "out": Path(__file__).parent / EXAMPLE / "out",
-    "show_progress": True,
-    "debug": False,
-    "check_state_validity": True
-}
-
-
-# ======================================================================================================================
 
 class ProductState(State):
-    def __init__(self, game_state, semi_aut_state, turn):
+    def __init__(self, game_state, semi_aut_state):
         self._game_state = game_state
         self._sa_state = semi_aut_state
-        self._turn = turn
         super().__init__(obj=(self._game_state, self._sa_state))
 
     def __hash__(self):
@@ -58,9 +47,6 @@ class ProductState(State):
     def semi_aut_state(self):
         return self._sa_state
 
-    def turn(self):
-        return self._turn
-
 
 def spot_eval(cond, true_atoms):
     """
@@ -88,7 +74,7 @@ def spot_eval(cond, true_atoms):
 
 
 class ProductGame(tsys.TransitionSystem):
-    def __init__(self, name, game, automata: List[PrefAutomaton], skip_sa_state_check=False):
+    def __init__(self, name, game: tsys.TransitionSystem, automata: List[PrefAutomaton], skip_sa_state_check=False):
         # Base constructor
         super().__init__(
             name=f"ProductGame({game.name()})",
@@ -108,29 +94,17 @@ class ProductGame(tsys.TransitionSystem):
         self._automata = automata
 
     def state_vars(self):
-        return ["TBD"]
+        return None
 
     def states(self):
-        if self.model_type() == "cdg":
-            return [
-                ProductState(game_state=s, semi_aut_state=q, turn=None)
-                for s, q in itertools.product(self._game.states(), self._automata[0].get_states())
-            ]
-        else:
-            return [
-                ProductState(game_state=s, semi_aut_state=q, turn=self._game.id2state(s).turn())
-                for s, q in itertools.product(self._game.states(), self._automata[0].get_states())
-            ]
+        return itertools.product(self._game.states(), self._automata[0].get_states())
 
     def actions(self, state):
-        s = state.game_state()
-        # q = state.semi_aut_state()
+        s, q = state
         return {a for _, _, a, _ in self._game.transitions(from_state=s)}
 
     def delta(self, state, action):
-        s = state.game_state()
-        q = state.semi_aut_state()
-
+        s, q = state
         s_next = None
         for _, t, a, p in self._game.transitions(from_state=s):
             if a == action:
@@ -141,55 +115,44 @@ class ProductGame(tsys.TransitionSystem):
         subs_map = {p: True if p in label else False for p in self._game.atoms()}
         for cond, q_next in self._automata[0].transitions[q].items():
             if spot_eval(cond, subs_map):
-                if self.model_type() == "cdg":
-                    return ProductState(s_next, q_next, turn=None)
-                else:
-                    return ProductState(s_next, q_next, turn=3 - self._game.id2state(s).turn())
+                return s_next, q_next
 
     def atoms(self):
-        return {str(i) for i in self._automata[0].get_states()}
+        return set()
 
     def label(self, state):
-        return set(str(state.semi_aut_state()))
-        # return set()
-
-    def turn(self, state):
-        return state.game_state().turn()
+        return set()
 
 
 if __name__ == '__main__':
-    # Load game config
-    with open(CONSTRUCTION_CONFIG["out"] / GAME_CONFIG_FILE, "rb") as f:
-        game_config = pickle.load(f)
-
-    with open(CONSTRUCTION_CONFIG["out"] / f"{game_config['name']}.pkl", "rb") as f:
+    # Load game
+    with open("game_model.pickle", "rb") as f:
         game = pickle.loads(f.read())
 
     # Define specs
-    spec_dir = Path(__file__).parent / EXAMPLE / "specs"
+    spec0 = PrefScLTL.from_file("spec0.spec")
+    aut0 = spec0.translate()
 
-    specs = dict()
-    paut = dict()
-    for i in range(len(game_config["arms"])):
-        arm = game_config["arms"][i]
-        spec = PrefScLTL.from_file(spec_dir / f"{game_config['specs'][arm]}.spec")
-        aut = spec.translate()
-        specs[arm] = spec
-        paut[arm] = aut
+    spec1 = PrefScLTL.from_file("spec2.spec")
+    aut1 = spec1.translate()
 
     # Create product game
     product_game = ProductGame(
         name="ProductGame",
         game=game,
-        automata=[paut[arm] for arm in game_config["arms"]]
+        automata=[aut0, aut1]
     )
 
-    out = product_game.build(
-        build_labels=True,
-        show_progress=CONSTRUCTION_CONFIG["show_progress"],
-        debug=CONSTRUCTION_CONFIG["debug"]
-    )
+    # Print states
+    pprint(product_game.states())
 
-    # Save game model as pickle file
-    with open(CONSTRUCTION_CONFIG["out"] / f"{game_config['name']}_product.pkl", "wb") as f:
-        f.write(pickle.dumps(out))
+    # Print actions for each state
+    for state in list(product_game.states()):
+        print(state)
+        pprint(product_game.actions(state))
+        print("==== ")
+
+    # Check delta function
+    for state in product_game.states():
+        for act in product_game.actions(state):
+            print(f"delta({state}, {act}) = {product_game.delta(state, act)}")

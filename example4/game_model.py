@@ -1,7 +1,7 @@
 """
 And Kaan implementation, 4 Jan @ 12.00 PM
 """
-
+import copy
 import itertools
 import pickle
 
