@@ -10,6 +10,8 @@ from typing import Iterable, Dict, List
 from ggsolver.generators import tsys
 from ggsolver.generators.tsys.cls_state import *
 from loguru import logger
+import copy
+
 
 
 class GameState(State):
@@ -76,7 +78,7 @@ class BlocksWorld(tsys.TransitionSystem):
         # Call base constructor
         super().__init__(
             name=name,
-            model_type='dtptb',
+            model_type='cdg',
             is_qualitative=True
         )
 
@@ -147,6 +149,10 @@ class BlocksWorld(tsys.TransitionSystem):
                     ('on', 'b2', 'b1', 0),
                     ('on', 'b3', 'b2', 0),
                     ('on', 'b4', 'b3', 0),
+                    ('on', 'b5', 'b4', 0),
+                    ('hold','a1','none'),
+                    ('hold', 'a2', 'none'),
+                    ('hold', 'a3', 'none'),
                 },
                 turn=2
             )
@@ -179,20 +185,27 @@ class BlocksWorld(tsys.TransitionSystem):
                 if ('hold', arm, b1) in state.predicates():
                     for l in range(self.location):
                         available_actions[arm].add(('put', arm, b1, l))
+        result = set()
+        for act in itertools.product(available_actions[self.arms[0]], available_actions[self.arms[1]],available_actions[self.arms[2]]):
+            result.add(act)
+
+        return result
 
     def delta(self, state, action):
         # state=list(state)
-        act = self.actions(state)
-        state_up = state.copy()
+        # act = self.actions(state)
+        act=action
+        #state_up = state.copy()
+        state_up = copy.deepcopy(state.predicates())
 
-        a = list(act.keys())
-        for i in range(len(a)):
-            if action[i] not in act[a[i]]:
-                print('Not a valid action profile')
-                return
+        # a = list(act.keys())
+        # for i in range(len(a)):
+        #     if action[i] not in act[a[i]]:
+        #         print('Not a valid action profile')
+        #         return
 
-        for i in range(len(a)):
-            if action[i] == 'no_action':
+        for i in range(len(act)):
+            if action[i][0] == 'no_action':
                 next_state = state_up
             elif action[i][0] == 'put':
                 loc = action[i][3]
@@ -394,202 +407,202 @@ class BlocksWorld(tsys.TransitionSystem):
 #         )
 
 
-def atoms(self):
-    return {"a", "b", "c"}
+    def atoms(self):
+        return {"a", "b", "c"}
 
 
-def label(self, state):
-    if ('on', 'b1', 'b2') in state.predicates():
-        return {"a"}
-    else:
-        return {"b", "c"}
-    # else:
-    #     return set()
+    def label(self, state):
+        if ('on', 'b1', 'b2',0) in state.predicates():
+            return {"a"}
+        else:
+            return {"b", "c"}
+        # else:
+        #     return set()
 
 
-def _free_arms(self, state):
-    free_arms = set(self.arms)
-    blocks_in_arms = {arm: None for arm in self.arms}
+    def _free_arms(self, state):
+        free_arms = set(self.arms)
+        blocks_in_arms = {arm: None for arm in self.arms}
 
-    for pred in state.predicates():
-        if pred[0] == "hold":
-            free_arms.discard(pred[1])
-            blocks_in_arms[pred[1]] = pred[2]
-    return free_arms, blocks_in_arms
-
-
-def _top_blocks(self, predicates):
-    free_blocks = set(self.blocks)
-    for pred in predicates:
-        if pred[0] == "on":
-            free_blocks.discard(pred[2])
-        if pred[0] == "hold":
-            free_blocks.discard(pred[2])
-    return free_blocks
+        for pred in state.predicates():
+            if pred[0] == "hold":
+                free_arms.discard(pred[1])
+                blocks_in_arms[pred[1]] = pred[2]
+        return free_arms, blocks_in_arms
 
 
-def _neighbors_block(self, predicates, block):
-    block_above = None
-    block_below = None
-    location = None
-    for pred in predicates:
-        if pred[0] == "on" and pred[2] == block:
-            block_above = pred[1]
-
-        if pred[0] == "on" and pred[1] == block:
-            block_below = pred[2]
-            location = pred[3]
-
-    return block_above, block_below, location
+    def _top_blocks(self, predicates):
+        free_blocks = set(self.blocks)
+        for pred in predicates:
+            if pred[0] == "on":
+                free_blocks.discard(pred[2])
+            if pred[0] == "hold":
+                free_blocks.discard(pred[2])
+        return free_blocks
 
 
-# def _neighbors_block(self, predicates, block):
-#     block_above = None
-#     block_below = None
-#     for pred in predicates:
-#         if pred[0] == "on" and pred[2] == block:
-#             block_above = pred[1]
-#
-#         if pred[0] == "on" and pred[1] == block:
-#             block_below = pred[2]
-#
-#     return block_above, block_below
+    def _neighbors_block(self, predicates, block):
+        block_above = None
+        block_below = None
+        location = None
+        for pred in predicates:
+            if pred[0] == "on" and pred[2] == block:
+                block_above = pred[1]
 
-def _is_state_valid(self, state):
-    if not self._chk_one_block_on_two(state):
-        logger.warning(f"Invalid {state=}: One block is on two blocks.")
-        return False
+            if pred[0] == "on" and pred[1] == block:
+                block_below = pred[2]
+                location = pred[3]
 
-    if not self._chk_two_blocks_on_one(state):
-        logger.warning(f"Invalid {state=}: Two blocks are on one block.")
-        return False
-
-    if not self._chk_block_on_itself(state):
-        logger.warning(f"Invalid {state=}: A block is on itself.")
-        return False
-
-    if not self._chk_block_noton_something_and_in_arm(state):
-        logger.warning(f"Invalid {state=}: A block is on something and in an arm.")
-        return False
-
-    if not self._chk_not_block_in_arm_and_something_on_block(state):
-        logger.warning(f"Invalid {state=}: A block is on something and in an arm.")
-        return False
-
-    if not self._chk_block_is_somewhere(state):
-        logger.warning(f"Invalid {state=}: A block is neither on another block nor in an arm.")
-        return False
-
-    if not self._chk_block_notin_two_arms(state):
-        logger.warning(f"Invalid {state=}: A block is in two arms.")
-        return False
-
-    if not self._chk_not_table_on_block(state):
-        logger.warning(f"Invalid {state=}: Table is on a block.")
-        return False
-
-    if not self._chk_not_arm_holds_table(state):
-        logger.warning(f"Invalid {state=}: An arm holds the table.")
-        return False
-
-    return True
+        return block_above, block_below, location
 
 
-def _chk_one_block_on_two(self, state):
-    """ Constructs a dictionary {x: y} where x is the block on top and y is the block below. """
-    below = dict()
-    for pred, x, y in state.predicates():
-        if pred == "on":
-            if x in below:
-                return False
-            below[x] = y
-    return True
+    # def _neighbors_block(self, predicates, block):
+    #     block_above = None
+    #     block_below = None
+    #     for pred in predicates:
+    #         if pred[0] == "on" and pred[2] == block:
+    #             block_above = pred[1]
+    #
+    #         if pred[0] == "on" and pred[1] == block:
+    #             block_below = pred[2]
+    #
+    #     return block_above, block_below
 
-
-def _chk_two_blocks_on_one(self, state):
-    """ Constructs a dictionary {x: y} where x is the block below and y is the block on top. """
-    above = dict()
-    for pred, x, y in state.predicates():
-        if pred == "on":
-            if y in above:
-                return False
-            above[y] = x
-    return True
-
-
-def _chk_block_on_itself(self, state):
-    for pred, x, y in state.predicates():
-        if pred == "on" and x == y:
+    def _is_state_valid(self, state):
+        if not self._chk_one_block_on_two(state):
+            logger.warning(f"Invalid {state=}: One block is on two blocks.")
             return False
-    return True
 
-
-def _chk_block_noton_something_and_in_arm(self, state):
-    # Assume. _chk_one_block_on_two and _chk_two_blocks_on_one and _chk_block_on_itself are passed.
-    position = dict()
-    for pred, x, y in state.predicates():
-        if pred == "on":
-            if x in position:
-                return False
-            position[x] = "on"
-        elif pred == "hold":
-            if y in position:
-                return False
-            position[y] = "hold"
-    return True
-
-
-def _chk_not_block_in_arm_and_something_on_block(self, state):
-    # Assume. _chk_one_block_on_two and _chk_two_blocks_on_one and _chk_block_on_itself are passed.
-    position = dict()
-    for pred, x, y in state.predicates():
-        if pred == "on":
-            if y in position:
-                return False
-            position[y] = "on"
-        elif pred == "hold":
-            if y in position:
-                return False
-            position[y] = "hold"
-    return True
-
-
-def _chk_block_is_somewhere(self, state):
-    for block in self.blocks:
-
-        if not any(
-                (pred[0] == "on" and pred[1] == block) or (pred[0] == "hold" and pred[2] == block)
-                for pred in state.predicates()
-        ):
+        if not self._chk_two_blocks_on_one(state):
+            logger.warning(f"Invalid {state=}: Two blocks are on one block.")
             return False
-    return True
 
-
-def _chk_block_notin_two_arms(self, state):
-    for block in self.blocks:
-        if len([pred for pred in state.predicates() if pred[0] == "hold" and pred[2] == block]) > 1:
+        if not self._chk_block_on_itself(state):
+            logger.warning(f"Invalid {state=}: A block is on itself.")
             return False
-    return True
+
+        if not self._chk_block_noton_something_and_in_arm(state):
+            logger.warning(f"Invalid {state=}: A block is on something and in an arm.")
+            return False
+
+        if not self._chk_not_block_in_arm_and_something_on_block(state):
+            logger.warning(f"Invalid {state=}: A block is on something and in an arm.")
+            return False
+
+        if not self._chk_block_is_somewhere(state):
+            logger.warning(f"Invalid {state=}: A block is neither on another block nor in an arm.")
+            return False
+
+        if not self._chk_block_notin_two_arms(state):
+            logger.warning(f"Invalid {state=}: A block is in two arms.")
+            return False
+
+        if not self._chk_not_table_on_block(state):
+            logger.warning(f"Invalid {state=}: Table is on a block.")
+            return False
+
+        if not self._chk_not_arm_holds_table(state):
+            logger.warning(f"Invalid {state=}: An arm holds the table.")
+            return False
+
+        return True
 
 
-def _chk_not_table_on_block(self, state):
-    return not any(pred[0] == "on" and pred[1] == "table" for pred in state.predicates())
+    def _chk_one_block_on_two(self, state):
+        """ Constructs a dictionary {x: y} where x is the block on top and y is the block below. """
+        below = dict()
+        for pred, x, y in state.predicates():
+            if pred == "on":
+                if x in below:
+                    return False
+                below[x] = y
+        return True
 
 
-def _chk_not_arm_holds_table(self, state):
-    return not any(pred[0] == "hold" and pred[2] == "table" for pred in state.predicates())
+    def _chk_two_blocks_on_one(self, state):
+        """ Constructs a dictionary {x: y} where x is the block below and y is the block on top. """
+        above = dict()
+        for pred, x, y in state.predicates():
+            if pred == "on":
+                if y in above:
+                    return False
+                above[y] = x
+        return True
+
+
+    def _chk_block_on_itself(self, state):
+        for pred, x, y in state.predicates():
+            if pred == "on" and x == y:
+                return False
+        return True
+
+
+    def _chk_block_noton_something_and_in_arm(self, state):
+        # Assume. _chk_one_block_on_two and _chk_two_blocks_on_one and _chk_block_on_itself are passed.
+        position = dict()
+        for pred, x, y in state.predicates():
+            if pred == "on":
+                if x in position:
+                    return False
+                position[x] = "on"
+            elif pred == "hold":
+                if y in position:
+                    return False
+                position[y] = "hold"
+        return True
+
+
+    def _chk_not_block_in_arm_and_something_on_block(self, state):
+        # Assume. _chk_one_block_on_two and _chk_two_blocks_on_one and _chk_block_on_itself are passed.
+        position = dict()
+        for pred, x, y in state.predicates():
+            if pred == "on":
+                if y in position:
+                    return False
+                position[y] = "on"
+            elif pred == "hold":
+                if y in position:
+                    return False
+                position[y] = "hold"
+        return True
+
+
+    def _chk_block_is_somewhere(self, state):
+        for block in self.blocks:
+
+            if not any(
+                    (pred[0] == "on" and pred[1] == block) or (pred[0] == "hold" and pred[2] == block)
+                    for pred in state.predicates()
+            ):
+                return False
+        return True
+
+
+    def _chk_block_notin_two_arms(self, state):
+        for block in self.blocks:
+            if len([pred for pred in state.predicates() if pred[0] == "hold" and pred[2] == block]) > 1:
+                return False
+        return True
+
+
+    def _chk_not_table_on_block(self, state):
+        return not any(pred[0] == "on" and pred[1] == "table" for pred in state.predicates())
+
+
+    def _chk_not_arm_holds_table(self, state):
+        return not any(pred[0] == "hold" and pred[2] == "table" for pred in state.predicates())
 
 
 if __name__ == '__main__':
-    blocks = ['b1', 'b2', 'b3', 'b4']
+    blocks = ['b1', 'b2', 'b3', 'b4','b5']
     arms = ['a1', 'a2', 'a3']
     partitions = {
         "a1": {"b1"},
-        "a2": {"b2"},
-        "a3": {"b3", "b4"},
+        "a2": {"b2", "b3"},
+        "a3": {"b4", "b5"},
     }
 
-    game = BlocksWorld(name="BW_5b_3a", blocks=blocks, arms=arms, partitions=partitions, priority=arms, location=2)
+    game = BlocksWorld(name="BW_5b_3a", blocks=blocks, arms=arms, partitions=partitions, priority=arms, location=3)
     out = game.build(build_labels=True, show_progress=True, debug=False)
     with open("game_model.pickle", "wb") as f:
         f.write(pickle.dumps(out))
