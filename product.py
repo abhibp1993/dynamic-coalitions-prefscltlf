@@ -108,16 +108,20 @@ class ProductGame(tsys.TransitionSystem):
         self._game = game
         self._automata = automata
 
-
-
     def state_vars(self):
         return ["TBD"]
 
     def states(self):
-        return [
-            ProductState(game_state=s, semi_aut_state=q, turn=self._game.id2state(s).turn())
-            for s, q in itertools.product(self._game.states(), self._automata[0].get_states())
-        ]
+        if self.model_type() == "cdg":
+            return [
+                ProductState(game_state=s, semi_aut_state=q, turn=None)
+                for s, q in itertools.product(self._game.states(), self._automata[0].get_states())
+            ]
+        else:
+            return [
+                ProductState(game_state=s, semi_aut_state=q, turn=self._game.id2state(s).turn())
+                for s, q in itertools.product(self._game.states(), self._automata[0].get_states())
+            ]
 
     def actions(self, state):
         s = state.game_state()
