@@ -18,6 +18,7 @@ class TransitionSystem:
         self._model_type = model_type
         self._is_qualitative = is_qualitative
 
+
     def state_vars(self):
         # TODO. Provide default
         pass
