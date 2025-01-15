@@ -56,7 +56,7 @@ def _assign_costs(conc_game, ranks, player, num_players):
 
     # Iterate to find the smallest rank that can be enforced by player from every state
     cost = {state: float("inf") for state in conc_game.states()}
-    for rank in range(max_rank):
+    for rank in range(max_rank+1):
         # Compute final states at this rank
         final_states = [sid for sid, value in ranks.items() if value[player] <= rank]  # TODO: Implement
 
@@ -116,8 +116,8 @@ if __name__ == '__main__':
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks.pkl", "rb") as f:
         ranks = pickle.loads(f.read())
 
-    # with open(CONSTRUCTION_CONFIG["out"] / f"{game_config['name']}.pkl", "rb") as f:
-    # game = pickle.loads(f.read())
+    with open(CONSTRUCTION_CONFIG["out"] / f"{game_config['name']}.pkl", "rb") as f:
+        game = pickle.loads(f.read())
     # # Load ranks
     # with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks.pkl", "rb") as f:
     #     ranks = pickle.loads(f.read())

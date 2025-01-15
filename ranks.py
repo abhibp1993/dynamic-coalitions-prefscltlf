@@ -15,6 +15,14 @@ from prefscltl2pdfa import utils
 EXAMPLE = "example4"  # Folder nPrefAutomatoname of your blocks world implementation
 GAME_CONFIG_FILE = "blockworld_4b_3a.conf"
 
+CONSTRUCTION_CONFIG = {
+    "out": Path(__file__).parent / EXAMPLE / "out",
+    "show_progress": True,
+    "debug": False,
+    "check_state_validity": True
+}
+
+
 
 # ======================================================================================================================
 
@@ -80,6 +88,10 @@ if __name__ == '__main__':
     # Load game config
     with open(Path(__file__).parent / EXAMPLE / "out" / GAME_CONFIG_FILE, "rb") as f:
         game_config = pickle.load(f)
+
+    # Load the base game
+    with open(CONSTRUCTION_CONFIG["out"] / f"{game_config['name']}.pkl", "rb") as f:
+        game = pickle.loads(f.read())
 
     # Load product game
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_product.pkl", "rb") as f:

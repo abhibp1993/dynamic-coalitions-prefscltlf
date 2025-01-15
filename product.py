@@ -82,7 +82,7 @@ def spot_eval(cond, true_atoms):
         return node.map(transform)
 
     # Apply the transform and return the result.
-    # Since every literal is replaced by true or false,
+    # Since every literal is replaced byproduct (2) true or false,
     #   the transformed formula is guaranteed to be either true or false.
     return True if transform(spot.formula(cond)).is_tt() else False
 
@@ -111,6 +111,21 @@ class ProductGame(tsys.TransitionSystem):
         return ["TBD"]
 
     def states(self):
+        q= self._automata[0].init_state
+        states=set()
+        for s in self._game.init_states():
+            label = self._game.get_label(state=s, is_id=True)
+            for cond, q_next in self._automata[0].transitions[q].items():
+                if spot_eval(cond, label):
+                    if self.model_type() == "cdg":
+                        states.add(ProductState(s, q_next, turn=None))
+                    else:
+                        states.add(ProductState(s, q_next, turn=3 - self._game.id2state(s).turn()))
+
+        return states
+
+    def states2(self):
+        # label = self._game.get_label(state=s_next, is_id=True)
         if self.model_type() == "cdg":
             return [
                 ProductState(game_state=s, semi_aut_state=q, turn=None)
@@ -140,7 +155,7 @@ class ProductGame(tsys.TransitionSystem):
         label = self._game.get_label(state=s_next, is_id=True)
         subs_map = {p: True if p in label else False for p in self._game.atoms()}
         for cond, q_next in self._automata[0].transitions[q].items():
-            if spot_eval(cond, subs_map):
+            if spot_eval(cond, label):
                 if self.model_type() == "cdg":
                     return ProductState(s_next, q_next, turn=None)
                 else:
