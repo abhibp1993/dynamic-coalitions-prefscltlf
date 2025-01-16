@@ -58,7 +58,7 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks
 
                     # If coalition is NOT rational for player i, eliminate coalition action
                     if values[u][player_i - 1] < max(costs[v][player_i - 2] for v in next_states_under_a):
-                        d[u].remove((players, act))
+                        # d[u].remove((players, act))
                         # This 'continue' is for if the joint action is not rationalizable, the rest of the iteration does not have to be done. Am I correct with this?
                         continue
                         # TODO
@@ -96,15 +96,15 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks
                 general_costs[u][act][tuple(non_coalition)] = c
 
         # Eliminate states with no enabled actions (use costs dictionary)
-        all_c_vectors_set = set()
+            all_c_vectors_set = set()
         # For surviving states, update max costs for all players.
-        for act, non_coalitions in general_costs[u].items():
-            for non_coalition, c in non_coalitions.items():
+            for act, non_coalitions in general_costs[u].items():
+                for non_coalition, c in non_coalitions.items():
                 # Convert the c list to a tuple and add it to the set
-                all_c_vectors_set.add(tuple(c))
+                    all_c_vectors_set.add(tuple(c))
 
-        max_costs = tuple(max(t[i] for t in all_c_vectors_set) for i in range(len(c)))
-        costs[u] = max_costs
+            max_costs = tuple(max(t[i] for t in all_c_vectors_set) for i in range(len(c)))
+            costs[u] = max_costs
         # Update Vk
         # Break condition
 
@@ -199,10 +199,11 @@ def synthesis(product_game, conc_game, ranks, values, n_players):
     max_rank = max(value[0] for value in ranks.values())  # TODO
 
     # Iterate over all rank until initial state is winning
-    for rank in range(max_rank):
+    for rank in range(max_rank+1):
         win_states, strategy = _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks)
         if conc_game.init_states() in win_states:
             break
+
 
     return win_states
 
@@ -236,8 +237,8 @@ if __name__ == '__main__':
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks_conc_game.pkl", "rb") as f:
         ranks_conc_game = pickle.loads(f.read())
 
-    # with open(CONSTRUCTION_CONFIG["out"] / f"{game_config['name']}.pkl", "rb") as f:
-    # game = pickle.loads(f.read())
+    with open(CONSTRUCTION_CONFIG["out"] / f"{game_config['name']}.pkl", "rb") as f:
+        game = pickle.loads(f.read())
     # # Load ranks
     # with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks.pkl", "rb") as f:
     #     ranks = pickle.loads(f.read())

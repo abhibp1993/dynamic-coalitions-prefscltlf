@@ -411,7 +411,7 @@ class BlocksWorld(tsys.TransitionSystem):
 
 
     def label(self, state):
-        if ('on', 'b2', 'b1',0) in state.predicates():
+        if ('on', 'b1', 'b3',2) in state.predicates():
             return {"a"}
         elif ('on', 'b1', 'b2',0) in state.predicates():
             return {"b"}
