@@ -171,9 +171,9 @@ class BlocksWorld(tsys.TransitionSystem):
     def actions(self, state):
         # state=list(state)
         available_actions = {arm: {('no_action', arm)} for arm in self.arms}
-
+        blocks_with_table=self.blocks+["table"]
         for b1 in self.blocks:
-            for b2 in self.blocks:
+            for b2 in blocks_with_table:
                 for l in range(self.location):
                     if ('on', b1, b2, l) in state.predicates() or ('on', b2, b1, l) in state.predicates():
                         for arm in self.arms:
@@ -184,6 +184,7 @@ class BlocksWorld(tsys.TransitionSystem):
                 if ('hold', arm, b1) in state.predicates():
                     for l in range(self.location):
                         available_actions[arm].add(('put', arm, b1, l))
+
         result = set()
         for act in itertools.product(available_actions[self.arms[0]], available_actions[self.arms[1]],available_actions[self.arms[2]]):
             result.add(act)
@@ -606,6 +607,17 @@ if __name__ == '__main__':
     }
 
     game = BlocksWorld(name="BW_5b_3a", blocks=blocks, arms=arms, partitions=partitions, priority=arms, location=3)
+    # state= GameState(
+    #             predicates={
+    #                 ('on', 'b3', 'table', 2),
+    #                 ('on', 'b4', 'table', 0),
+    #                 ('hold','a1','b1'),
+    #                 ('hold', 'a2', 'b2'),
+    #                 ('hold', 'a3', 'none'),
+    #             },
+    #             turn=None
+    #         )
+    # pprint(game.actions(game.states().pop()))
     out = game.build(build_labels=True, show_progress=True, debug=False)
     with open("game_model.pickle", "wb") as f:
         f.write(pickle.dumps(out))
