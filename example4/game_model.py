@@ -4,14 +4,12 @@ And Kaan implementation, 4 Jan @ 12.00 PM
 import copy
 import itertools
 import pickle
-
-from pprint import pprint
 from typing import Iterable, Dict, List
+
+from loguru import logger
+
 from ggsolver.generators import tsys
 from ggsolver.generators.tsys.cls_state import *
-from loguru import logger
-import copy
-
 
 
 class GameState(State):
@@ -149,7 +147,7 @@ class BlocksWorld(tsys.TransitionSystem):
                     ('on', 'b2', 'b1', 0),
                     ('on', 'b3', 'b2', 0),
                     ('on', 'b4', 'b3', 0),
-                    ('hold','a1','none'),
+                    ('hold', 'a1', 'none'),
                     ('hold', 'a2', 'none'),
                     ('hold', 'a3', 'none'),
                 },
@@ -186,7 +184,8 @@ class BlocksWorld(tsys.TransitionSystem):
                         available_actions[arm].add(('put', arm, b1, l))
 
         result = set()
-        for act in itertools.product(available_actions[self.arms[0]], available_actions[self.arms[1]],available_actions[self.arms[2]]):
+        for act in itertools.product(available_actions[self.arms[0]], available_actions[self.arms[1]],
+                                     available_actions[self.arms[2]]):
             result.add(act)
 
         return result
@@ -194,8 +193,8 @@ class BlocksWorld(tsys.TransitionSystem):
     def delta(self, state, action):
         # state=list(state)
         # act = self.actions(state)
-        act=action
-        #state_up = state.copy()
+        act = action
+        # state_up = state.copy()
         state_up = copy.deepcopy(state.predicates())
 
         # a = list(act.keys())
@@ -265,165 +264,161 @@ class BlocksWorld(tsys.TransitionSystem):
                     next_state = state_up
 
         return GameState(
-                predicates=next_state,
-                turn=None
-            )
+            predicates=next_state,
+            turn=None
+        )
 
-# def actions(self, state):
-#     # Identify blocks on top of stack and free arms
-#     # top_blocks = self._top_blocks(state)
-#     free_arms, block_held_by = self._free_arms(state)
-#     # print(top_blocks)
-#     # print(free_arms, block_held_by)
-#
-#     # Every free arm can pick a block not held by some arm
-#     actions_arm = {arm: {("no_action", arm)} for arm in self.arms}
-#     for arm in free_arms:
-#         for block in set(self.partitions[arm]) - free_arms:
-#             actions_arm[arm].add(("pick", arm, block))
-#
-#     # Every holding arm can put the block it holds on a top block
-#     for arm in [a for a in self.arms if a not in free_arms]:
-#         for l in range(self.location):
-#             actions_arm[arm].add(("put", arm, block_held_by[arm], l))
-#
-#     # for arm in [a for a in self.arms if a not in free_arms]:
-#     #     for block in top_blocks:
-#     #         actions_arm[arm].add(("put", arm, block_held_by[arm], block))
-#
-#     result = set()
-#     if state.turn() == 1:
-#         for act in actions_arm[self.arms[0]]:
-#             coalition = 1
-#             result.add((coalition, act))
-#
-#         for player in range(2, len(self.arms) + 1):
-#             coalition = (1, player)
-#             for act in itertools.product(actions_arm[self.arms[0]], actions_arm[self.arms[player - 1]]):
-#                 result.add((coalition, act))
-#
-#         return result
-#
-#     else:  # state.turn() == 2:
-#         if state.coalition() == 1:
-#             a1 = state.action()
-#             actions = []
-#             for i in range(1, len(self.arms) + 1):
-#                 if i == 1:
-#                     actions.append([a1])
-#                     continue
-#
-#                 actions.append(actions_arm[self.arms[i - 1]])
-#
-#             return set(itertools.product(*actions))
-#
-#         if state.coalition() != 1:
-#             (_, p) = state.coalition()
-#             (a1, ap) = state.action()
-#
-#             actions = []
-#             for i in range(1, len(self.arms) + 1):
-#                 if i == 1:
-#                     actions.append([a1])
-#                     continue
-#
-#                 if i == p:
-#                     actions.append([ap])
-#                     continue
-#
-#                 actions.append(actions_arm[self.arms[i - 1]])
-#
-#             return set(itertools.product(*actions))
-#
-#         # return set(itertools.product(*actions)) - {tuple(("no-op",) for _ in range(len(self.arms)))}
-#
-#
-# def delta(self, state, action):
-#     if state.turn() == 1:
-#         return GameState(
-#             predicates=state.predicates(),
-#             turn=2,
-#             coalition=action[0],
-#             action=action[1]
-#         )
-#
-#     else:
-#         action = dict(zip(self.arms, action))
-#
-#         # Process actions as per priority
-#         # pred_to_add = set()
-#         # pred_to_remove = set()
-#         new_predicates = set(state.predicates())
-#         for arm in self.priority:
-#             pred_to_add = set()
-#             pred_to_remove = set()
-#             act = action[arm]
-#
-#             if act == ("no_action", arm):
-#                 continue
-#
-#
-#             elif act[0] == "pick":
-#                 block = act[2]
-#                 block_above, block_below, location = self._neighbors_block(new_predicates, block)
-#
-#                 pred_to_add.add(("hold", act[1], block))
-#                 pred_to_remove.add(("on", block, block_below, location))
-#
-#                 if block_above is not None:
-#                     pred_to_remove.add(("on", block_above, block, location))
-#                     pred_to_add.add(("on", block_above, block_below, location))
-#
-#
-#             else:  # act[0] == "put"
-#                 arm = act[1]
-#                 block = act[2]
-#                 l = act[3]
-#                 # on_block = act[3]
-#                 # pprint(act)
-#                 filtered_predicate = [predicate for predicate in list(new_predicates) if
-#                                       predicate[0] == "on" and predicate[3] == l]
-#                 if len(filtered_predicate) == 0:
-#                     pred_to_add.add(("on", block, 'table', l))
-#                     pred_to_remove.add(("hold", arm, block))
-#
-#                 # pprint(list(new_predicates))
-#                 else:
-#                     on_block = filtered_predicate[0][1]
-#                     # finding the top block in location l
-#                     for predicate in filtered_predicate:
-#                         if predicate[2] == on_block:
-#                             on_block = predicate[1]
-#
-#                     pred_to_add.add(("on", block, on_block, l))
-#                     pred_to_remove.add(("hold", arm, block))
-#             # n=new_predicates.copy()
-#             new_predicates -= pred_to_remove
-#             new_predicates |= pred_to_add
-#             # print("kaan")
-#
-#         return GameState(
-#             predicates=new_predicates,
-#             turn=1
-#         )
-
+    # def actions(self, state):
+    #     # Identify blocks on top of stack and free arms
+    #     # top_blocks = self._top_blocks(state)
+    #     free_arms, block_held_by = self._free_arms(state)
+    #     # print(top_blocks)
+    #     # print(free_arms, block_held_by)
+    #
+    #     # Every free arm can pick a block not held by some arm
+    #     actions_arm = {arm: {("no_action", arm)} for arm in self.arms}
+    #     for arm in free_arms:
+    #         for block in set(self.partitions[arm]) - free_arms:
+    #             actions_arm[arm].add(("pick", arm, block))
+    #
+    #     # Every holding arm can put the block it holds on a top block
+    #     for arm in [a for a in self.arms if a not in free_arms]:
+    #         for l in range(self.location):
+    #             actions_arm[arm].add(("put", arm, block_held_by[arm], l))
+    #
+    #     # for arm in [a for a in self.arms if a not in free_arms]:
+    #     #     for block in top_blocks:
+    #     #         actions_arm[arm].add(("put", arm, block_held_by[arm], block))
+    #
+    #     result = set()
+    #     if state.turn() == 1:
+    #         for act in actions_arm[self.arms[0]]:
+    #             coalition = 1
+    #             result.add((coalition, act))
+    #
+    #         for player in range(2, len(self.arms) + 1):
+    #             coalition = (1, player)
+    #             for act in itertools.product(actions_arm[self.arms[0]], actions_arm[self.arms[player - 1]]):
+    #                 result.add((coalition, act))
+    #
+    #         return result
+    #
+    #     else:  # state.turn() == 2:
+    #         if state.coalition() == 1:
+    #             a1 = state.action()
+    #             actions = []
+    #             for i in range(1, len(self.arms) + 1):
+    #                 if i == 1:
+    #                     actions.append([a1])
+    #                     continue
+    #
+    #                 actions.append(actions_arm[self.arms[i - 1]])
+    #
+    #             return set(itertools.product(*actions))
+    #
+    #         if state.coalition() != 1:
+    #             (_, p) = state.coalition()
+    #             (a1, ap) = state.action()
+    #
+    #             actions = []
+    #             for i in range(1, len(self.arms) + 1):
+    #                 if i == 1:
+    #                     actions.append([a1])
+    #                     continue
+    #
+    #                 if i == p:
+    #                     actions.append([ap])
+    #                     continue
+    #
+    #                 actions.append(actions_arm[self.arms[i - 1]])
+    #
+    #             return set(itertools.product(*actions))
+    #
+    #         # return set(itertools.product(*actions)) - {tuple(("no-op",) for _ in range(len(self.arms)))}
+    #
+    #
+    # def delta(self, state, action):
+    #     if state.turn() == 1:
+    #         return GameState(
+    #             predicates=state.predicates(),
+    #             turn=2,
+    #             coalition=action[0],
+    #             action=action[1]
+    #         )
+    #
+    #     else:
+    #         action = dict(zip(self.arms, action))
+    #
+    #         # Process actions as per priority
+    #         # pred_to_add = set()
+    #         # pred_to_remove = set()
+    #         new_predicates = set(state.predicates())
+    #         for arm in self.priority:
+    #             pred_to_add = set()
+    #             pred_to_remove = set()
+    #             act = action[arm]
+    #
+    #             if act == ("no_action", arm):
+    #                 continue
+    #
+    #
+    #             elif act[0] == "pick":
+    #                 block = act[2]
+    #                 block_above, block_below, location = self._neighbors_block(new_predicates, block)
+    #
+    #                 pred_to_add.add(("hold", act[1], block))
+    #                 pred_to_remove.add(("on", block, block_below, location))
+    #
+    #                 if block_above is not None:
+    #                     pred_to_remove.add(("on", block_above, block, location))
+    #                     pred_to_add.add(("on", block_above, block_below, location))
+    #
+    #
+    #             else:  # act[0] == "put"
+    #                 arm = act[1]
+    #                 block = act[2]
+    #                 l = act[3]
+    #                 # on_block = act[3]
+    #                 # pprint(act)
+    #                 filtered_predicate = [predicate for predicate in list(new_predicates) if
+    #                                       predicate[0] == "on" and predicate[3] == l]
+    #                 if len(filtered_predicate) == 0:
+    #                     pred_to_add.add(("on", block, 'table', l))
+    #                     pred_to_remove.add(("hold", arm, block))
+    #
+    #                 # pprint(list(new_predicates))
+    #                 else:
+    #                     on_block = filtered_predicate[0][1]
+    #                     # finding the top block in location l
+    #                     for predicate in filtered_predicate:
+    #                         if predicate[2] == on_block:
+    #                             on_block = predicate[1]
+    #
+    #                     pred_to_add.add(("on", block, on_block, l))
+    #                     pred_to_remove.add(("hold", arm, block))
+    #             # n=new_predicates.copy()
+    #             new_predicates -= pred_to_remove
+    #             new_predicates |= pred_to_add
+    #             # print("kaan")
+    #
+    #         return GameState(
+    #             predicates=new_predicates,
+    #             turn=1
+    #         )
 
     def atoms(self):
         return {"a", "b", "c"}
 
-
     def label(self, state):
-        if ('on', 'b1', 'b3',2) in state.predicates():
+        if ('on', 'b1', 'b3', 2) in state.predicates():
             return {"a"}
-        elif ('on', 'b1', 'b2',0) in state.predicates():
+        elif ('on', 'b1', 'b2', 0) in state.predicates():
             return {"b"}
         else:
             return {"c"}
 
-
         # else:
         #     return set()
-
 
     def _free_arms(self, state):
         free_arms = set(self.arms)
@@ -435,7 +430,6 @@ class BlocksWorld(tsys.TransitionSystem):
                 blocks_in_arms[pred[1]] = pred[2]
         return free_arms, blocks_in_arms
 
-
     def _top_blocks(self, predicates):
         free_blocks = set(self.blocks)
         for pred in predicates:
@@ -444,7 +438,6 @@ class BlocksWorld(tsys.TransitionSystem):
             if pred[0] == "hold":
                 free_blocks.discard(pred[2])
         return free_blocks
-
 
     def _neighbors_block(self, predicates, block):
         block_above = None
@@ -459,7 +452,6 @@ class BlocksWorld(tsys.TransitionSystem):
                 location = pred[3]
 
         return block_above, block_below, location
-
 
     # def _neighbors_block(self, predicates, block):
     #     block_above = None
@@ -512,7 +504,6 @@ class BlocksWorld(tsys.TransitionSystem):
 
         return True
 
-
     def _chk_one_block_on_two(self, state):
         """ Constructs a dictionary {x: y} where x is the block on top and y is the block below. """
         below = dict()
@@ -522,7 +513,6 @@ class BlocksWorld(tsys.TransitionSystem):
                     return False
                 below[x] = y
         return True
-
 
     def _chk_two_blocks_on_one(self, state):
         """ Constructs a dictionary {x: y} where x is the block below and y is the block on top. """
@@ -534,13 +524,11 @@ class BlocksWorld(tsys.TransitionSystem):
                 above[y] = x
         return True
 
-
     def _chk_block_on_itself(self, state):
         for pred, x, y in state.predicates():
             if pred == "on" and x == y:
                 return False
         return True
-
 
     def _chk_block_noton_something_and_in_arm(self, state):
         # Assume. _chk_one_block_on_two and _chk_two_blocks_on_one and _chk_block_on_itself are passed.
@@ -556,7 +544,6 @@ class BlocksWorld(tsys.TransitionSystem):
                 position[y] = "hold"
         return True
 
-
     def _chk_not_block_in_arm_and_something_on_block(self, state):
         # Assume. _chk_one_block_on_two and _chk_two_blocks_on_one and _chk_block_on_itself are passed.
         position = dict()
@@ -571,7 +558,6 @@ class BlocksWorld(tsys.TransitionSystem):
                 position[y] = "hold"
         return True
 
-
     def _chk_block_is_somewhere(self, state):
         for block in self.blocks:
 
@@ -582,17 +568,14 @@ class BlocksWorld(tsys.TransitionSystem):
                 return False
         return True
 
-
     def _chk_block_notin_two_arms(self, state):
         for block in self.blocks:
             if len([pred for pred in state.predicates() if pred[0] == "hold" and pred[2] == block]) > 1:
                 return False
         return True
 
-
     def _chk_not_table_on_block(self, state):
         return not any(pred[0] == "on" and pred[1] == "table" for pred in state.predicates())
-
 
     def _chk_not_arm_holds_table(self, state):
         return not any(pred[0] == "hold" and pred[2] == "table" for pred in state.predicates())

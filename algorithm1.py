@@ -24,9 +24,9 @@ CONSTRUCTION_CONFIG = {
 
 # ======================================================================================================================
 
-def rank_conc(product_game, conc_game, ranks):
+def assign_ranks(product_game, ranks):
     ranks_conc = dict()
-    for sid, state in conc_game.states(as_dict=True).items():
+    for sid, state in product_game.states(as_dict=True).items():
         key = next((key for key, value in product_game.states(as_dict=True).items() if value == state), None)
         ranks_conc[sid] = ranks[key]
     return ranks_conc
@@ -90,7 +90,7 @@ def assign_costs(product_game, ranks, num_players):
     # Construct concurrent game
     # conc_game = construct_conc_game(product_game)
     conc_game=product_game
-    rank_c = rank_conc(product_game, conc_game, ranks)
+    rank_c = assign_ranks(product_game, ranks)
     # Assign costs
     cost = dict()
     for player in range(num_players):
@@ -135,7 +135,7 @@ if __name__ == '__main__':
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_conc_game.pkl", "wb") as f:
         pickle.dump(conc_game, f)
 
-    rank_c = rank_conc(product_game, conc_game, ranks)
+    rank_c = assign_ranks(product_game, conc_game, ranks)
     # Save ranks for conc game
     with open(Path(__file__).parent / EXAMPLE / "out" / f"{game_config['name']}_ranks_conc_game.pkl", "wb") as f:
         pickle.dump(rank_c, f)
