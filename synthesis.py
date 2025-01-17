@@ -1,13 +1,6 @@
 import pickle
-import random
-
-from ggsolver.solvers.dtptb import SWinReach
-from pathlib import Path
-from product import ProductState
-from pprint import pprint
-from ggsolver.solvers.cdg import *
-from ggsolver.game import GraphGame
 from collections import defaultdict
+from pathlib import Path
 
 # MODIFY ONLY THIS BLOCK
 # ======================================================================================================================
@@ -25,7 +18,7 @@ CONSTRUCTION_CONFIG = {
 # ======================================================================================================================
 
 # This function also takes ranks, actually it will take ranks for the concurrent game states
-def _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks):
+def _strategy_given_rank(rank, product_game, values, n_players, ranks):
     # Get P1 states with given ranks
     states = set()  #
     states = {state for state, value in ranks.items() if value[0] <= rank}
@@ -34,19 +27,19 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks
 
     # TODO (Use concurrent game)
     # this keeps track of backpropagated costs
-    costs = {state: [float("inf"), float("inf")] for state in conc_game.states()}
+    costs = {state: [float("inf"), float("inf")] for state in product_game.states()}
     # this is general dictionary of state, coalition, non_coalition and the respective actions
     general_costs = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     for state in states:
         costs[state] = [values[state][1], values[state][2]]
 
     while True:
-        d = pre(states, conc_game)
+        d = pre(states, product_game)
         set_u = d.keys() - states
         # Iterate over all states in set_u
         survived_states = set()
         for u in set_u:
-            cnt=0
+            cnt = 0
             for players, act in d[u]:
 
                 # this is the vector appended candidate_costs
@@ -56,7 +49,7 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks
                     _, player_i = players
 
                     # Get next states given coalition action
-                    next_states_under_a = partial_transition(conc_game, u, players, act)
+                    next_states_under_a = partial_transition(product_game, u, players, act)
 
                     # If coalition is NOT rational for player i, eliminate coalition action
                     if values[u][player_i - 1] < max(costs[v][player_i - 2] for v in next_states_under_a):
@@ -77,17 +70,17 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks
                 for player_j in set(player + 1 for player in range(n_players)) - {player for player in players}:
                     actions_j = set()
                     non_coalitional_cost = dict()
-                    for _, _, a, _ in conc_game.transitions(from_state=u):
+                    for _, _, a, _ in product_game.transitions(from_state=u):
                         actions_j.add(a[player_j - 1])
 
                     for a_j in actions_j:
                         players_with_j = tuple(player for player in players)
                         players_with_j = players_with_j + (player_j,)
-                        if isinstance(act, tuple) and len(act) == 2 and act[0] !='no_action':
+                        if isinstance(act, tuple) and len(act) == 2 and act[0] != 'no_action':
                             act_with_j = act + (a_j,)  # Unpack the second tuple
                         else:
                             act_with_j = (act,) + (a_j,)
-                        next_states_j = partial_transition(conc_game, u, players, act_with_j)
+                        next_states_j = partial_transition(product_game, u, players, act_with_j)
                         non_coalitional_cost[a_j] = max(costs[state][player_j - 2] for state in next_states_j)
 
                     min_key = min(non_coalitional_cost, key=non_coalitional_cost.get)
@@ -98,16 +91,15 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks
                 survived_states.add(u)
                 general_costs[u][act][tuple(non_coalition)] = c
 
-
             if cnt == len(d[u]):
                 continue
 
-        # Eliminate states with no enabled actions (use costs dictionary)
+            # Eliminate states with no enabled actions (use costs dictionary)
             all_c_vectors_set = set()
-        # For surviving states, update max costs for all players.
+            # For surviving states, update max costs for all players.
             for act, non_coalitions in general_costs[u].items():
                 for non_coalition, c in non_coalitions.items():
-                # Convert the c list to a tuple and add it to the set
+                    # Convert the c list to a tuple and add it to the set
                     all_c_vectors_set.add(tuple(c))
 
             max_costs = tuple(max(t[i] for t in all_c_vectors_set) for i in range(len(c)))
@@ -201,20 +193,19 @@ def pre(set_u, conc_game):
 #     return frontier
 
 
-def synthesis(product_game, conc_game, ranks, values, n_players):
+def synthesis(product_game, ranks, values, n_players):
     # Compute max rank
     max_rank = max(value[0] for value in ranks.values())  # TODO
 
     # Iterate over all rank until initial state is winning
-    for rank in range(max_rank+1):
-    # rank=0
-        win_states, general_costs = _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks)
-    # print("kaan")
-        if conc_game.init_states().issubset(win_states):
+    for rank in range(max_rank + 1):
+        # rank=0
+        win_states, general_costs = _strategy_given_rank(rank, product_game, values, n_players, ranks)
+        # print("kaan")
+        if product_game.init_states().issubset(win_states):
             break
 
-
-    return win_states,general_costs
+    return win_states, general_costs
 
 
 if __name__ == '__main__':
@@ -253,5 +244,4 @@ if __name__ == '__main__':
     #     ranks = pickle.loads(f.read())
 
     # Compute costs for each player
-
-    s,g = synthesis(product_game, conc_game, ranks_conc_game, costs, 3)
+    s, g = synthesis(product_game, conc_game, ranks_conc_game, costs, 3)
