@@ -46,7 +46,9 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks
         # Iterate over all states in set_u
         survived_states = set()
         for u in set_u:
+            cnt=0
             for players, act in d[u]:
+
                 # this is the vector appended candidate_costs
                 c = [float("inf"), float("inf")]
                 if players != 1:
@@ -58,6 +60,7 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks
 
                     # If coalition is NOT rational for player i, eliminate coalition action
                     if values[u][player_i - 1] < max(costs[v][player_i - 2] for v in next_states_under_a):
+                        cnt = cnt + 1
                         # d[u].remove((players, act))
                         # This 'continue' is for if the joint action is not rationalizable, the rest of the iteration does not have to be done. Am I correct with this?
                         continue
@@ -95,6 +98,10 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks
                 survived_states.add(u)
                 general_costs[u][act][tuple(non_coalition)] = c
 
+
+            if cnt == len(d[u]):
+                continue
+
         # Eliminate states with no enabled actions (use costs dictionary)
             all_c_vectors_set = set()
         # For surviving states, update max costs for all players.
@@ -114,7 +121,7 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks
             break
         states = states | survived_states
 
-    return states, None
+    return states, general_costs
 
 
 def get_coalition_actions(game, u):
@@ -200,12 +207,14 @@ def synthesis(product_game, conc_game, ranks, values, n_players):
 
     # Iterate over all rank until initial state is winning
     for rank in range(max_rank+1):
-        win_states, strategy = _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks)
-        if conc_game.init_states() in win_states:
+    # rank=0
+        win_states, general_costs = _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks)
+    # print("kaan")
+        if conc_game.init_states().issubset(win_states):
             break
 
 
-    return win_states
+    return win_states,general_costs
 
 
 if __name__ == '__main__':
@@ -245,4 +254,4 @@ if __name__ == '__main__':
 
     # Compute costs for each player
 
-    s = synthesis(product_game, conc_game, ranks_conc_game, costs, 3)
+    s,g = synthesis(product_game, conc_game, ranks_conc_game, costs, 3)
