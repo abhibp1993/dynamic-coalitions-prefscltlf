@@ -244,4 +244,4 @@ if __name__ == '__main__':
     #     ranks = pickle.loads(f.read())
 
     # Compute costs for each player
-    s, g = synthesis(product_game, conc_game, ranks_conc_game, costs, 3)
+    s, g = synthesis(product_game, ranks_conc_game, costs, 3)
