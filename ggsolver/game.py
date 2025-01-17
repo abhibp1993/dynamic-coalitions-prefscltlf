@@ -1,5 +1,9 @@
+import json
+import pickle
+from pathlib import Path
+from typing import Iterable, Union, Any
+
 import networkx as nx
-from typing import Literal, Iterable, Union, Any
 
 ModelTypes = [
     'mdp',  # Markov Decision Process
@@ -248,12 +252,12 @@ class Game:
     def name(self):
         return self._name
 
-    def states(self):
+    def states(self, as_dict=False, as_names=False) -> Union[list, dict]:
         """
         Returns the list of all states in the game.
 
         :return: List of all states.
-        :rtype: list
+        :rtype: list or dict
         :raises NotImplementedError: Abstract method to be implemented in a subclass.
         """
         raise NotImplementedError("Abstract method.")
@@ -267,6 +271,46 @@ class Game:
         :raises NotImplementedError: Abstract method to be implemented in a subclass.
         """
         raise NotImplementedError("Abstract method.")
+
+    def save_states(self, fpath: Path):
+        if fpath.suffix == '.sta':
+            with open(fpath, "w") as f:
+                for state_id, state in self.states(as_dict=True).items():
+                    f.write(f"{state_id}:\t{state}\n")
+
+        elif fpath.suffix == '.json':
+            with open(fpath, "w") as f:
+                json.dump(self.states(as_dict=True), f)
+
+        elif fpath.suffix == '.pkl':
+            with open(fpath, "w") as f:
+                pickle.dump(self.states(as_dict=True), f)
+
+    def save_transitions(self, fpath: Path, state_names=False):
+        states_dict = self.states(as_dict=True)
+
+        if fpath.suffix == '.tra':
+            with open(fpath, "w") as f:
+                for u, v, a, p in self.transitions():
+                    if not state_names:
+                        f.write(f"{u}, {v}, {a}, {p} \n")
+                    else:
+                        # This is beautified
+                        f.writelines([
+                            f"{u=}: \t{states_dict[u]}\n",
+                            f"a: \t{a}\n",
+                            f"p: \t{p}\n",
+                            f"{v=}: \t{states_dict[v]}\n",
+                            f"# --------------\n",
+                        ])
+
+        elif fpath.suffix == '.json':
+            with open(fpath, "w") as f:
+                json.dump(self.transitions(), f)
+
+        elif fpath.suffix == '.pkl':
+            with open(fpath, "w") as f:
+                pickle.dump(self.transitions(), f)
 
     def check_compliance(self):
         """
