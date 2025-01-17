@@ -110,8 +110,10 @@ def _strategy_given_rank(rank, product_game, conc_game, values, n_players, ranks
                 # Convert the c list to a tuple and add it to the set
                     all_c_vectors_set.add(tuple(c))
 
-            max_costs = tuple(max(t[i] for t in all_c_vectors_set) for i in range(len(c)))
-            costs[u] = max_costs
+            max_costs = list(max(t[i] for t in all_c_vectors_set) for i in range(len(c)))
+            max_costs_compared_with_value = tuple(min(max_costs[i],values[u][i+1]) for i in range(len(c)))
+            costs[u] =  max_costs_compared_with_value
+
         # Update Vk
         # Break condition
 
