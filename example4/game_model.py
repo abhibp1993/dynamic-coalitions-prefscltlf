@@ -204,6 +204,7 @@ class BlocksWorld(tsys.TransitionSystem):
         #         print('Not a valid action profile')
         #         return
 
+            # Fixme priority should be used
         for i in range(len(act)):
             if action[i][0] == 'no_action':
                 next_state = state_up
