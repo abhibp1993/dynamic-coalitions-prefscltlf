@@ -1,3 +1,4 @@
+import json
 import pickle
 from pathlib import Path
 
@@ -13,11 +14,11 @@ from synthesis import synthesis
 # ======================================================================================================================
 # MODIFY ONLY THIS BLOCK
 # ======================================================================================================================
-EXAMPLE = "example4"  # Folder name of your blocks world implementation
-from example4.game_model import BlocksWorld
+EXAMPLE = "example5_timed"  # Folder name of your blocks world implementation
+exec(f"from {EXAMPLE}.game_model import BlocksWorld")
 
 GAME_CONFIG = {
-    "name": f"blockworld_4b_3a_3l",  # Name is generated automatically. If you want custom name, uncomment this line.
+    "name": f"blockworld_4b_3a",  # Name is generated automatically. If you want custom name, uncomment this line.
     "blocks": ['b1', 'b2', 'b3', 'b4'],
     "arms": ['a1', 'a2', 'a3'],
     "partitions": {
@@ -43,8 +44,8 @@ CONSTRUCTION_CONFIG = {
     "skip_model_generation": True,
     "skip_product": True,
     "skip_ranks": True,
-    "skip_costs": True,
-    "skip_synthesis": False,
+    "skip_costs": False,
+    # "skip_synthesis": False,
 }
 
 if not CONSTRUCTION_CONFIG["out"].exists():
@@ -85,7 +86,8 @@ def main_model_generator(game_config, construction_config):
         arms=game_config["arms"],
         partitions=game_config["partitions"],
         priority=game_config["priority"],
-        location=game_config["location"]
+        max_time=10
+        # location=game_config["location"]
         # check_state_validity=CONSTRUCTION_CONFIG["check_state_validity"]
     )
     game_graph = game.build(
@@ -224,13 +226,14 @@ def main():
     # Run synthesis
     win_states, win_costs = synthesis(product_game_graph, ranks, costs, 3)
 
-    win_states_fpath = CONSTRUCTION_CONFIG["out"] / f"{game_cfg['name']}_win_states.pkl"
-    win_costs_fpath = CONSTRUCTION_CONFIG["out"] / f"{game_cfg['name']}_win_costs.pkl"
-    with open(win_states_fpath, "wb") as f:
-        pickle.dump(win_states, f)
-    with open(win_costs_fpath, "wb") as f:
-        w_costs = {k: {k1: {k2: v2 for k2, v2 in v1.items()} for k1, v1 in v.items()} for k, v in win_costs.items()}
-        pickle.dump(w_costs, f)
+    win_states_fpath = CONSTRUCTION_CONFIG["out"] / f"{game_cfg['name']}_win_states.txt"
+    win_costs_fpath = CONSTRUCTION_CONFIG["out"] / f"{game_cfg['name']}_win_costs.json"
+    with open(win_states_fpath, "w") as f:
+        f.writelines([f"{state}\n" for state in win_states])
+
+    with open(win_costs_fpath, "w") as f:
+        w_costs = {str(k): {str(k1): {str(k2): v2 for k2, v2 in v1.items()} for k1, v1 in v.items()} for k, v in win_costs.items()}
+        json.dump(w_costs, f, indent=2)
 
 
 if __name__ == '__main__':
