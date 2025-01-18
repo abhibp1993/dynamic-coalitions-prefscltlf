@@ -9,27 +9,28 @@ from prefscltl2pdfa import PrefAutomaton, PrefScLTL
 from ggsolver.generators import tsys
 from ggsolver.generators.tsys.cls_state import *
 
-# ======================================================================================================================
-# MODIFY ONLY THIS BLOCK
-# ======================================================================================================================
-EXAMPLE = "example4"  # Folder name of your blocks world implementation
-GAME_CONFIG_FILE = "blockworld_4b_3a.conf"
-
-CONSTRUCTION_CONFIG = {
-    "out": Path(__file__).parent / EXAMPLE / "out",
-    "show_progress": True,
-    "debug": False,
-    "check_state_validity": True
-}
-
-
-# ======================================================================================================================
+# # ======================================================================================================================
+# # MODIFY ONLY THIS BLOCK
+# # ======================================================================================================================
+# EXAMPLE = "example4"  # Folder name of your blocks world implementation
+# GAME_CONFIG_FILE = "blockworld_4b_3a.conf"
+#
+# CONSTRUCTION_CONFIG = {
+#     "out": Path(__file__).parent / EXAMPLE / "out",
+#     "show_progress": True,
+#     "debug": False,
+#     "check_state_validity": True
+# }
+#
+#
+# # ======================================================================================================================
 
 class ProductState(State):
-    def __init__(self, game_state, semi_aut_state, turn):
+    # def __init__(self, game_state, semi_aut_state, turn):
+    def __init__(self, game_state, semi_aut_state):
         self._game_state = game_state
         self._sa_state = semi_aut_state
-        self._turn = turn
+        # self._turn = turn
         super().__init__(obj=(self._game_state, self._sa_state))
 
     def __hash__(self):
@@ -58,8 +59,8 @@ class ProductState(State):
     def semi_aut_state(self):
         return self._sa_state
 
-    def turn(self):
-        return self._turn
+    # def turn(self):
+    #     return self._turn
 
 
 def spot_eval(cond, true_atoms):
@@ -118,24 +119,25 @@ class ProductGame(tsys.TransitionSystem):
             for cond, q_next in self._automata[0].transitions[q].items():
                 if spot_eval(cond, label):
                     if self.model_type() == "cdg":
-                        states.add(ProductState(s, q_next, turn=None))
+                        states.add(ProductState(s, q_next))
                     else:
-                        states.add(ProductState(s, q_next, turn=3 - self._game.id2state(s).turn()))
+                        # states.add(ProductState(s, q_next, turn=3 - self._game.id2state(s).turn()))
+                        raise TypeError("Turn-based game is not supported.")
 
         return states
 
-    def states2(self):
-        # label = self._game.get_label(state=s_next, is_id=True)
-        if self.model_type() == "cdg":
-            return [
-                ProductState(game_state=s, semi_aut_state=q, turn=None)
-                for s, q in itertools.product(self._game.states(), self._automata[0].get_states())
-            ]
-        else:
-            return [
-                ProductState(game_state=s, semi_aut_state=q, turn=self._game.id2state(s).turn())
-                for s, q in itertools.product(self._game.states(), self._automata[0].get_states())
-            ]
+    # def states2(self):
+    #     # label = self._game.get_label(state=s_next, is_id=True)
+    #     if self.model_type() == "cdg":
+    #         return [
+    #             ProductState(game_state=s, semi_aut_state=q, turn=None)
+    #             for s, q in itertools.product(self._game.states(), self._automata[0].get_states())
+    #         ]
+    #     else:
+    #         return [
+    #             ProductState(game_state=s, semi_aut_state=q, turn=self._game.id2state(s).turn())
+    #             for s, q in itertools.product(self._game.states(), self._automata[0].get_states())
+    #         ]
 
     def actions(self, state):
         s = state.game_state()
@@ -157,9 +159,10 @@ class ProductGame(tsys.TransitionSystem):
         for cond, q_next in self._automata[0].transitions[q].items():
             if spot_eval(cond, label):
                 if self.model_type() == "cdg":
-                    return ProductState(s_next, q_next, turn=None)
+                    return ProductState(s_next, q_next)
                 else:
-                    return ProductState(s_next, q_next, turn=3 - self._game.id2state(s).turn())
+                    # return ProductState(s_next, q_next, turn=3 - self._game.id2state(s).turn())
+                    raise TypeError("Turn-based game is not supported.")
 
     def atoms(self):
         return {str(i) for i in self._automata[0].get_states()}
@@ -168,8 +171,8 @@ class ProductGame(tsys.TransitionSystem):
         return set(str(state.semi_aut_state()))
         # return set()
 
-    def turn(self, state):
-        return state.game_state().turn()
+    # def turn(self, state):
+    #     return state.game_state().turn()
 
 
 if __name__ == '__main__':
